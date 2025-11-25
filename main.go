@@ -2,41 +2,40 @@ package main
 
 import (
 	"log"
+	"os"
 
-	"sistem-prestasi/config"   // Import folder config
-	"sistem-prestasi/database" // Import folder database
+	"sistem-prestasi/config"
+	"sistem-prestasi/database"
+	"sistem-prestasi/route" // Import paket route
 
-	"github.com/gofiber/fiber/v2"
+	// Nanti kita akan import repository dan service di sini
 )
 
 func main() {
-	// 1. Setup Logger (Membuat file app.log otomatis)
-	config.SetupLogger()
-	log.Println("Starting Application...") // Ini akan tertulis di logs/app.log
+	// 1. Load Environment Variables
+	config.LoadEnv()
 
-	// 2. Load Config Environment
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		log.Fatalf("Gagal memuat konfigurasi: %v", err)
+	// 2. Inisialisasi Database
+	dbPostgres := database.InitPostgres()
+	database.InitMongo()
+
+	defer dbPostgres.Close()
+
+	// 3. Setup Fiber App
+	app := config.NewApp()
+
+	// ---------------------------------------------------------
+	// AREA DEPENDENCY INJECTION 
+	// ---------------------------------------------------------
+
+	// 4. Wiring Routes
+	route.SetupRoutes(app)
+
+	// 5. Jalankan Server
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "3000"
 	}
-
-	// 3. Connect Database
-	database.Connect()
-
-	// 4. Init Fiber App (dari config/app.go)
-	app := config.NewFiberApp()
-
-	// Route Test
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Sistem Pelaporan Prestasi API is running",
-			"docs":    "See SRS for details",
-		})
-	})
-
-	// 5. Start Server
-	log.Printf("Server running on port %s", cfg.AppPort)
-	if err := app.Listen(cfg.AppPort); err != nil {
-		log.Fatalf("Gagal menjalankan server: %v", err)
-	}
+	
+	log.Fatal(app.Listen(":" + port))
 }
