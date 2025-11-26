@@ -61,3 +61,6 @@
 2025/11/24 15:35:35 🔄 Running Auto Migration for PostgreSQL...
 2025/11/24 15:35:35 ✅ Auto Migration completed successfully
 2025/11/24 15:35:35 🚀 Server running on port :3000
+[11:50:38] 401 - POST /api/v1/auth/login -   19.375959ms
+[12:09:08] 200 - POST /api/v1/auth/login -  428.554875ms
+[12:24:06] 200 - POST /api/v1/auth/login -  472.163416ms
