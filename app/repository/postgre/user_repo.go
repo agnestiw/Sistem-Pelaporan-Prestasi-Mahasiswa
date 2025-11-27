@@ -63,3 +63,30 @@ func (r *UserRepository) GetPermissionsByRoleID(roleID string) ([]string, error)
 
 	return permissions, nil
 }
+
+func (r *UserRepository) FindByID(id string) (*postgre.User, error) {
+	query := `
+		SELECT u.id, u.username, u.email, u.full_name, u.role_id, r.name as role_name, u.is_active, u.created_at
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.id = $1
+	`
+
+	var user postgre.User
+	err := r.DB.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.FullName,
+		&user.RoleID,
+		&user.RoleName,
+		&user.IsActive,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}

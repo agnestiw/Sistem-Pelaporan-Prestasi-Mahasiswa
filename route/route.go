@@ -1,7 +1,8 @@
 package route
 
 import (
-	"sistem-prestasi/app/service" 
+	"sistem-prestasi/app/service"
+	"sistem-prestasi/middleware" 
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -15,5 +16,9 @@ func SetupRoutes(app *fiber.App, authService *service.AuthService) {
 
 	api := app.Group("/api/v1")
 
-	api.Post("/auth/login", authService.Login)
+	auth := api.Group("/auth")
+	auth.Post("/login", authService.Login)
+	auth.Post("/refresh", authService.Refresh)
+	auth.Post("/logout", middleware.Protect(), authService.Logout)
+    auth.Get("/profile", middleware.Protect(), authService.Profile)
 }

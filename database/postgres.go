@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/lib/pq" // Driver postgres
+	_ "github.com/lib/pq"
 )
 
 func InitPostgres() *sql.DB {
@@ -25,7 +25,6 @@ func InitPostgres() *sql.DB {
 		log.Fatalf("Gagal membuka koneksi Postgres: %v", err)
 	}
 
-	// Cek koneksi (Ping)
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("Gagal terhubung ke Postgres: %v", err)

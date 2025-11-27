@@ -2,11 +2,12 @@ package middleware
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
+	"sistem-prestasi/helper"
+	memory "sistem-prestasi/memory"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 func Protect() fiber.Handler {
@@ -22,28 +23,30 @@ func Protect() fiber.Handler {
 		}
 		tokenString := parts[1]
 
-		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("metode signing tidak valid")
-			}
-			return []byte(os.Getenv("API_SECRET")), nil
-		})
+		if memory.IsBlacklisted(tokenString) {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"message": "Unauthorized: Anda sudah logout, silakan login kembali",
+			})
+		}
 
-		if err != nil || !token.Valid {
+		claims, err := helper.ValidateJWT(tokenString)
+		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized: Token tidak valid"})
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			c.Locals("user_id", claims["user_id"])
-			c.Locals("role_id", claims["role_id"])
-			
-			permInterface := claims["permissions"].([]interface{})
-			var permissions []string
-			for _, v := range permInterface {
-				permissions = append(permissions, v.(string))
+		c.Locals("user_id", claims["user_id"])
+		c.Locals("role_id", claims["role_id"])
+
+		var permissions []string
+		if permClaim, ok := claims["permissions"]; ok && permClaim != nil {
+			if permInterface, ok := permClaim.([]interface{}); ok {
+				for _, v := range permInterface {
+					permissions = append(permissions, v.(string))
+				}
 			}
-			c.Locals("permissions", permissions)
 		}
+		
+		c.Locals("permissions", permissions)
 
 		return c.Next()
 	}

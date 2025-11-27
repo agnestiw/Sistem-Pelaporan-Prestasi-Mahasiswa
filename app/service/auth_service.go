@@ -1,88 +1,140 @@
 package service
 
 import (
-	"os"
 	"time"
 
-	"sistem-prestasi/app/dto"
-	"sistem-prestasi/app/repository/postgre" 
+	"sistem-prestasi/helper"
+
+	modelPostgre "sistem-prestasi/app/model/postgre"
+	repoPostgre "sistem-prestasi/app/repository/postgre"
+	memory "sistem-prestasi/memory"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	UserRepo *postgre.UserRepository
+	UserRepo *repoPostgre.UserRepository
 }
 
-func NewAuthService(userRepo *postgre.UserRepository) *AuthService {
+func NewAuthService(userRepo *repoPostgre.UserRepository) *AuthService {
 	return &AuthService{UserRepo: userRepo}
 }
 
 func (s *AuthService) Login(c *fiber.Ctx) error {
-	var req dto.LoginRequest
-
+	var req modelPostgre.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid request body",
-			"error":   err.Error(),
-		})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request body"})
 	}
 
 	user, err := s.UserRepo.FindByUsername(req.Username)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Username atau password salah",
-		})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "Username atau password salah",
-		})
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
 	}
 
-	permissions, err := s.UserRepo.GetPermissionsByRoleID(user.RoleID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Gagal mengambil data permission",
-		})
-	}
+	permissions, _ := s.UserRepo.GetPermissionsByRoleID(user.RoleID)
 
-	token, err := s.generateJWT(user.ID, user.RoleID, permissions)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Gagal membuat token",
-		})
+	accessToken, _ := helper.GenerateJWT(user.ID, user.RoleID, permissions, time.Hour*1)
+	refreshToken, _ := helper.GenerateJWT(user.ID, user.RoleID, permissions, time.Hour*24*7)
+
+	response := modelPostgre.LoginResponse{
+		Token:        accessToken,
+		RefreshToken: refreshToken,
+		User: modelPostgre.UserDetail{
+			ID:          user.ID,
+			Username:    user.Username,
+			FullName:    user.FullName,
+			Role:        user.RoleName,
+			Permissions: permissions,
+		},
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",
 		"message": "Login berhasil",
+		"data":    response,
+	})
+}
+
+func (s *AuthService) Refresh(c *fiber.Ctx) error {
+	var req modelPostgre.RefreshRequest
+	
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Format JSON salah. Gunakan key 'refreshToken'"})
+	}
+
+	if req.RefreshToken == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "RefreshToken wajib diisi"})
+	}
+
+	claims, err := helper.ValidateJWT(req.RefreshToken)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Refresh token tidak valid atau expired"})
+	}
+
+	userID := claims["user_id"].(string)
+	roleID := claims["role_id"].(string)
+	
+	var permissions []string
+	if permInter, ok := claims["permissions"].([]interface{}); ok {
+		for _, p := range permInter {
+			permissions = append(permissions, p.(string))
+		}
+	}
+
+	newAccessToken, _ := helper.GenerateJWT(userID, roleID, permissions, time.Hour*1)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": "success",
 		"data": fiber.Map{
-			"token": token,
-			"user": fiber.Map{
-				"id":          user.ID,
-				"username":    user.Username,
-				"fullName":    user.FullName,
-				"role":        user.RoleName,
-				"permissions": permissions, 
-			},
+			"token": newAccessToken,
 		},
 	})
 }
 
-func (s *AuthService) generateJWT(userID, roleID string, permissions []string) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id":     userID,
-		"role_id":     roleID,
-		"permissions": permissions,
-		"exp":         time.Now().Add(time.Hour * 24).Unix(),
+func (s *AuthService) Logout(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	if len(authHeader) < 8 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Token invalid"})
+	}
+	
+	tokenString := authHeader[7:]
+	memory.AddToBlacklist(tokenString)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  "success",
+		"message": "Berhasil logout",
+	})
+}
+
+func (s *AuthService) Profile(c *fiber.Ctx) error {
+	userID, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	secret := os.Getenv("API_SECRET")
-	return token.SignedString([]byte(secret))
+	user, err := s.UserRepo.FindByID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "User tidak ditemukan"})
+	}
+
+	permissions, _ := s.UserRepo.GetPermissionsByRoleID(user.RoleID)
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status": "success",
+		"data": fiber.Map{
+			"id":          user.ID,
+			"username":    user.Username,
+			"fullName":    user.FullName,
+			"email":       user.Email,
+			"role":        user.RoleName,
+			"permissions": permissions,
+			"isActive":    user.IsActive,
+			"joinedAt":    user.CreatedAt,
+		},
+	})
 }
