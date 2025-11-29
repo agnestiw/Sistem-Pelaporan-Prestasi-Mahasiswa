@@ -34,6 +34,27 @@ type UserDetail struct {
 	ID          string   `json:"id"`
 	Username    string   `json:"username"`
 	FullName    string   `json:"fullName"`
+	RoleID       string    `json:"role_id" db:"role_id"`
 	Role        string   `json:"role"`
 	Permissions []string `json:"permissions"`
+}
+
+type CreateUserRequest struct {
+	Username string `json:"username" validate:"required,min=4"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=6"`
+	FullName string `json:"fullName" validate:"required"`
+	RoleID   string `json:"roleId" validate:"required"` // Admin harus pilih role saat create
+}
+
+type UpdateUserRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email" validate:"email"`
+	FullName string `json:"fullName"`
+	Password string `json:"password"` // Opsional, jika kosong berarti tidak ganti password
+	IsActive *bool  `json:"isActive"` // Pointer agar bisa mendeteksi false
+}
+
+type AssignRoleRequest struct {
+	RoleID string `json:"roleId" validate:"required"`
 }

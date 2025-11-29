@@ -48,6 +48,7 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 			ID:          user.ID,
 			Username:    user.Username,
 			FullName:    user.FullName,
+			RoleID:	   user.RoleID,
 			Role:        user.RoleName,
 			Permissions: permissions,
 		},

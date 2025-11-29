@@ -9,7 +9,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func InitPostgres() *sql.DB {
+// Global Variable agar bisa diakses dari package lain
+var DB *sql.DB
+
+func InitPostgres() {
+	var err error
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		os.Getenv("DB_HOST"),
@@ -20,16 +24,14 @@ func InitPostgres() *sql.DB {
 		os.Getenv("DB_SSLMODE"),
 	)
 
-	db, err := sql.Open("postgres", dsn)
+	DB, err = sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatalf("Gagal membuka koneksi Postgres: %v", err)
 	}
 
-	err = db.Ping()
-	if err != nil {
+	if err := DB.Ping(); err != nil {
 		log.Fatalf("Gagal terhubung ke Postgres: %v", err)
 	}
 
 	log.Println("✅ Berhasil terhubung ke PostgreSQL")
-	return db
 }

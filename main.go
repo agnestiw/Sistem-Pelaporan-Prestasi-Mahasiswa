@@ -1,34 +1,35 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 
 	"sistem-prestasi/config"
 	"sistem-prestasi/database"
-	"sistem-prestasi/route"
-	
-	"sistem-prestasi/app/repository/postgre"
-	"sistem-prestasi/app/service"
 )
 
 func main() {
 	config.LoadEnv()
-	dbPostgres := database.InitPostgres()
-	// dbMongo := database.InitMongo() 
-	defer dbPostgres.Close()
 
-	userRepo := postgre.NewUserRepository(dbPostgres)
-	
-	authService := service.NewAuthService(userRepo)
+	database.InitPostgres()
+	database.InitMongo()
+
+	defer database.DB.Close()
+	defer func() {
+		if err := database.MongoClient.Disconnect(context.Background()); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	app := config.NewApp()
-	
-	route.SetupRoutes(app, authService)
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "3000"
 	}
+	
+	fmt.Println("🚀 Server is running on port " + port)
 	log.Fatal(app.Listen(":" + port))
 }
