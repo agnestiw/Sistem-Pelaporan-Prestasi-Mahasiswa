@@ -11,9 +11,13 @@ import (
 
 func SetupRoutes(app *fiber.App) {
 	userRepo := repoPostgre.NewUserRepository(database.DB)
+	studentRepo := repoPostgre.NewStudentRepository(database.DB)
+	lecturerRepo := repoPostgre.NewLecturerRepository(database.DB)
 
 	authService := service.NewAuthService(userRepo)
 	userService := service.NewUserService(userRepo)
+	studentService := service.NewStudentService(studentRepo)    
+	lecturerService := service.NewLecturerService(lecturerRepo)
 
 	api := app.Group("/api/v1")
 
@@ -32,4 +36,16 @@ func SetupRoutes(app *fiber.App) {
 	users.Put("/:id", userService.UpdateUser)
 	users.Delete("/:id", userService.DeleteUser)
 	users.Put("/:id/role", userService.AssignRole)
+
+	students := api.Group("/students")
+	students.Use(middleware.Protect()) 
+	students.Get("/", middleware.HasPermission("user:manage"), studentService.GetAll)
+	students.Get("/:id", studentService.GetByID)
+	students.Put("/:id/advisor", studentService.AssignAdvisor) 
+	// students.Get("/:id/achievements"), studentService.GetAchievements)
+
+	lecturers := api.Group("/lecturers")
+	lecturers.Use(middleware.Protect())
+	lecturers.Get("/", middleware.HasPermission("user:manage"), lecturerService.GetAll)
+	lecturers.Get("/:id/advisees", lecturerService.GetAdvisees)
 }
