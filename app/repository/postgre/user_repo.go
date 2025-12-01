@@ -1,31 +1,23 @@
 package postgre
 
 import (
-	"database/sql"
 	"sistem-prestasi/app/model/postgre"
+	"sistem-prestasi/database"
 )
 
-type UserRepository struct {
-	DB *sql.DB
-}
-
-func NewUserRepository(db *sql.DB) *UserRepository {
-	return &UserRepository{DB: db}
-}
-
-func (r *UserRepository) FindByUsername(username string) (*postgre.User, error) {
+func FindByUsername(username string) (*postgre.User, error) {
 	query := `
 		SELECT u.id, u.username, u.password_hash, u.full_name, u.role_id, r.name as role_name
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		WHERE u.username = $1 AND u.is_active = true
 	`
-	
+
 	var user postgre.User
-	err := r.DB.QueryRow(query, username).Scan(
-		&user.ID, 
-		&user.Username, 
-		&user.PasswordHash, 
+	err := database.DB.QueryRow(query, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.PasswordHash,
 		&user.FullName,
 		&user.RoleID,
 		&user.RoleName,
@@ -38,7 +30,7 @@ func (r *UserRepository) FindByUsername(username string) (*postgre.User, error) 
 	return &user, nil
 }
 
-func (r *UserRepository) GetPermissionsByRoleID(roleID string) ([]string, error) {
+func GetPermissionsByRoleID(roleID string) ([]string, error) {
 	query := `
 		SELECT p.name 
 		FROM permissions p
@@ -46,7 +38,7 @@ func (r *UserRepository) GetPermissionsByRoleID(roleID string) ([]string, error)
 		WHERE rp.role_id = $1
 	`
 
-	rows, err := r.DB.Query(query, roleID)
+	rows, err := database.DB.Query(query, roleID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +56,7 @@ func (r *UserRepository) GetPermissionsByRoleID(roleID string) ([]string, error)
 	return permissions, nil
 }
 
-func (r *UserRepository) FindByID(id string) (*postgre.User, error) {
+func UserFindByID(id string) (*postgre.User, error) {
 	query := `
 		SELECT u.id, u.username, u.email, u.full_name, u.role_id, r.name as role_name, u.is_active, u.created_at
 		FROM users u
@@ -73,7 +65,7 @@ func (r *UserRepository) FindByID(id string) (*postgre.User, error) {
 	`
 
 	var user postgre.User
-	err := r.DB.QueryRow(query, id).Scan(
+	err := database.DB.QueryRow(query, id).Scan(
 		&user.ID,
 		&user.Username,
 		&user.Email,
@@ -91,15 +83,14 @@ func (r *UserRepository) FindByID(id string) (*postgre.User, error) {
 	return &user, nil
 }
 
-
-func (r *UserRepository) FindAll() ([]postgre.User, error) {
+func FindAll() ([]postgre.User, error) {
 	query := `
 		SELECT u.id, u.username, u.email, u.full_name, u.role_id, r.name as role_name, u.is_active, u.created_at
 		FROM users u
 		JOIN roles r ON u.role_id = r.id
 		ORDER BY u.created_at DESC
 	`
-	rows, err := r.DB.Query(query)
+	rows, err := database.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -116,39 +107,39 @@ func (r *UserRepository) FindAll() ([]postgre.User, error) {
 	return users, nil
 }
 
-func (r *UserRepository) Create(user postgre.User) error {
+func Create(user postgre.User) error {
 	query := `
 		INSERT INTO users (username, email, password_hash, full_name, role_id, is_active)
 		VALUES ($1, $2, $3, $4, $5, true)
 	`
-	_, err := r.DB.Exec(query, user.Username, user.Email, user.PasswordHash, user.FullName, user.RoleID)
+	_, err := database.DB.Exec(query, user.Username, user.Email, user.PasswordHash, user.FullName, user.RoleID)
 	return err
 }
 
-func (r *UserRepository) Update(id string, user postgre.User) error {
+func Update(id string, user postgre.User) error {
 	query := `
 		UPDATE users 
 		SET username = $1, email = $2, full_name = $3, is_active = $4, updated_at = NOW()
 		WHERE id = $5
 	`
-	_, err := r.DB.Exec(query, user.Username, user.Email, user.FullName, user.IsActive, id)
+	_, err := database.DB.Exec(query, user.Username, user.Email, user.FullName, user.IsActive, id)
 	return err
 }
 
-func (r *UserRepository) UpdatePassword(id string, passwordHash string) error {
+func UpdatePassword(id string, passwordHash string) error {
 	query := `UPDATE users SET password_hash = $1 WHERE id = $2`
-	_, err := r.DB.Exec(query, passwordHash, id)
+	_, err := database.DB.Exec(query, passwordHash, id)
 	return err
 }
 
-func (r *UserRepository) UpdateRole(id string, roleID string) error {
+func UpdateRole(id string, roleID string) error {
 	query := `UPDATE users SET role_id = $1 WHERE id = $2`
-	_, err := r.DB.Exec(query, roleID, id)
+	_, err := database.DB.Exec(query, roleID, id)
 	return err
 }
 
-func (r *UserRepository) Delete(id string) error {
+func Delete(id string) error {
 	query := `DELETE FROM users WHERE id = $1`
-	_, err := r.DB.Exec(query, id)
+	_, err := database.DB.Exec(query, id)
 	return err
 }

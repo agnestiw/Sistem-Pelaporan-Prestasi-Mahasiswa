@@ -169,3 +169,13 @@
 [23:30:13] 200 - GET /api/v1/auth/profile -    1.458333ms
 [23:30:21] 403 - GET /api/v1/lecturers -      68.584µs
 [23:30:41] 403 - GET /api/v1/students/9e7f4134-8c47-408b-9c64-7de7dd8c7e7b -     892.333µs
+[12:58:48] 200 - POST /api/v1/auth/login -  312.567292ms
+[12:59:37] 401 - POST /api/v1/auth/logout -     183.334µs
+[13:40:55] 200 - POST /api/v1/auth/login -   312.32275ms
+[13:41:10] 200 - POST /api/v1/auth/login -  282.825959ms
+[13:41:19] 200 - GET /api/v1/auth/profile -    1.830334ms
+[13:41:26] 200 - POST /api/v1/auth/refresh -     116.875µs
+[13:41:31] 401 - GET /api/v1/students -      96.209µs
+[13:41:34] 200 - GET /api/v1/students -    3.387042ms
+[13:42:56] 200 - POST /api/v1/auth/logout -      168.75µs
+[13:43:00] 401 - GET /api/v1/auth/profile -      38.458µs

@@ -3,25 +3,21 @@ package postgre
 import (
 	"database/sql"
 	modelPostgre "sistem-prestasi/app/model/postgre"
+	"sistem-prestasi/database"
 )
 
-type LecturerRepository struct {
-	DB *sql.DB
-}
-
-func NewLecturerRepository(db *sql.DB) *LecturerRepository {
-	return &LecturerRepository{DB: db}
-}
-
-func (r *LecturerRepository) FindAll() ([]modelPostgre.LecturerDetail, error) {
+// FindAllLecturers mengambil semua data dosen
+func FindAllLecturers() ([]modelPostgre.LecturerDetail, error) {
 	query := `
-		SELECT l.id, l.lecturer_id, u.full_name, u.email, l.department
-		FROM lecturers l
-		JOIN users u ON l.user_id = u.id
-		ORDER BY u.full_name ASC
-	`
-	rows, err := r.DB.Query(query)
-	if err != nil { return nil, err }
+        SELECT l.id, l.lecturer_id, u.full_name, u.email, l.department
+        FROM lecturers l
+        JOIN users u ON l.user_id = u.id
+        ORDER BY u.full_name ASC
+    `
+	rows, err := database.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var lecturers []modelPostgre.LecturerDetail
@@ -35,25 +31,33 @@ func (r *LecturerRepository) FindAll() ([]modelPostgre.LecturerDetail, error) {
 	return lecturers, nil
 }
 
-func (r *LecturerRepository) FindByID(id string) (*modelPostgre.Lecturer, error) {
-	query := `SELECT id, user_id, lecturer_id, department, created_at FROM lecturers WHERE id = $1`
+// FindLecturerByID mencari dosen berdasarkan ID
+func FindLecturerByID(id string) (*modelPostgre.Lecturer, error) {
 	var l modelPostgre.Lecturer
-	err := r.DB.QueryRow(query, id).Scan(&l.ID, &l.UserID, &l.LecturerID, &l.Department, &l.CreatedAt)
-	if err != nil { return nil, err }
+
+	query := `SELECT id, user_id, lecturer_id, department, created_at FROM lecturers WHERE id = $1`
+	err := database.DB.QueryRow(query, id).Scan(&l.ID, &l.UserID, &l.LecturerID, &l.Department, &l.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
 	return &l, nil
 }
 
-func (r *LecturerRepository) FindAdvisees(lecturerID string) ([]modelPostgre.StudentDetail, error) {
+// FindLecturerAdvisees mencari mahasiswa bimbingan dari dosen tertentu
+func FindLecturerAdvisees(lecturerID string) ([]modelPostgre.StudentDetail, error) {
 	query := `
-		SELECT s.id, s.user_id, s.student_id, u.full_name, u.email, s.program_study, u_lec.full_name as advisor_name
-		FROM students s
-		JOIN users u ON s.user_id = u.id
-		JOIN lecturers l ON s.advisor_id = l.id
-		JOIN users u_lec ON l.user_id = u_lec.id
-		WHERE s.advisor_id = $1
-	`
-	rows, err := r.DB.Query(query, lecturerID)
-	if err != nil { return nil, err }
+        SELECT s.id, s.user_id, s.student_id, u.full_name, u.email, s.program_study, u_lec.full_name as advisor_name
+        FROM students s
+        JOIN users u ON s.user_id = u.id
+        JOIN lecturers l ON s.advisor_id = l.id
+        JOIN users u_lec ON l.user_id = u_lec.id
+        WHERE s.advisor_id = $1
+    `
+	rows, err := database.DB.Query(query, lecturerID)
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	var students []modelPostgre.StudentDetail

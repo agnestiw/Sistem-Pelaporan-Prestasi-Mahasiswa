@@ -2,49 +2,42 @@ package service
 
 import (
 	repoPostgre "sistem-prestasi/app/repository/postgre"
+	"sistem-prestasi/helper"
+
 	"github.com/gofiber/fiber/v2"
 )
 
-type LecturerService struct {
-	LecturerRepo *repoPostgre.LecturerRepository
-}
-
-func NewLecturerService(r *repoPostgre.LecturerRepository) *LecturerService {
-	return &LecturerService{LecturerRepo: r}
-}
-
-func (s *LecturerService) GetAll(c *fiber.Ctx) error {
-	lecturers, err := s.LecturerRepo.FindAll()
+// GetAllLecturers mengambil semua data dosen
+func GetAllLecturers(c *fiber.Ctx) error {
+	lecturers, err := repoPostgre.FindAllLecturers()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"message": "Gagal mengambil data dosen"})
 	}
 	return c.Status(200).JSON(fiber.Map{"status": "success", "data": lecturers})
 }
 
-func (s *LecturerService) isAdmin(c *fiber.Ctx) bool {
-	perms, ok := c.Locals("permissions").([]string)
-	if !ok { return false }
-	for _, p := range perms {
-		if p == "user:manage" { return true }
-	}
-	return false
-}
-
-func (s *LecturerService) GetAdvisees(c *fiber.Ctx) error {
+// GetLecturerAdvisees mengambil data mahasiswa bimbingan dosen tertentu
+func GetLecturerAdvisees(c *fiber.Ctx) error {
 	lecturerID := c.Params("id")
 
-	lecturer, err := s.LecturerRepo.FindByID(lecturerID)
+	// Menggunakan fungsi repo functional: FindLecturerByID(db, id)
+	lecturer, err := repoPostgre.FindLecturerByID(lecturerID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"message": "Dosen tidak ditemukan"})
 	}
 
-	loggedInUserID := c.Locals("user_id").(string)
+	loggedInUserID, ok := c.Locals("user_id").(string)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{"message": "Unauthorized"})
+	}
 
-	if !s.isAdmin(c) && lecturer.UserID != loggedInUserID {
+	// Cek otorisasi: harus admin atau dosen yang bersangkutan
+	if !helper.IsAdmin(c) && lecturer.UserID != loggedInUserID {
 		return c.Status(403).JSON(fiber.Map{"message": "Forbidden: Anda tidak boleh melihat bimbingan dosen lain"})
 	}
 
-	students, err := s.LecturerRepo.FindAdvisees(lecturerID)
+	// Menggunakan fungsi repo functional: FindLecturerAdvisees(db, lecturerID)
+	students, err := repoPostgre.FindLecturerAdvisees(lecturerID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"message": "Gagal mengambil data mahasiswa bimbingan"})
 	}

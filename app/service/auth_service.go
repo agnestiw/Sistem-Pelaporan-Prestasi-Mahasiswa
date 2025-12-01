@@ -13,21 +13,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type AuthService struct {
-	UserRepo *repoPostgre.UserRepository
-}
 
-func NewAuthService(userRepo *repoPostgre.UserRepository) *AuthService {
-	return &AuthService{UserRepo: userRepo}
-}
-
-func (s *AuthService) Login(c *fiber.Ctx) error {
+func Login(c *fiber.Ctx) error {
 	var req modelPostgre.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request body"})
 	}
 
-	user, err := s.UserRepo.FindByUsername(req.Username)
+	user, err := repoPostgre.FindByUsername(req.Username)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
 	}
@@ -36,7 +29,7 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
 	}
 
-	permissions, _ := s.UserRepo.GetPermissionsByRoleID(user.RoleID)
+	permissions, _ := repoPostgre.GetPermissionsByRoleID(user.RoleID)
 
 	accessToken, _ := helper.GenerateJWT(user.ID, user.RoleID, permissions, time.Hour*1)
 	refreshToken, _ := helper.GenerateJWT(user.ID, user.RoleID, permissions, time.Hour*24*7)
@@ -61,7 +54,7 @@ func (s *AuthService) Login(c *fiber.Ctx) error {
 	})
 }
 
-func (s *AuthService) Refresh(c *fiber.Ctx) error {
+func Refresh(c *fiber.Ctx) error {
 	var req modelPostgre.RefreshRequest
 	
 	if err := c.BodyParser(&req); err != nil {
@@ -97,7 +90,7 @@ func (s *AuthService) Refresh(c *fiber.Ctx) error {
 	})
 }
 
-func (s *AuthService) Logout(c *fiber.Ctx) error {
+func Logout(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if len(authHeader) < 8 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Token invalid"})
@@ -112,18 +105,18 @@ func (s *AuthService) Logout(c *fiber.Ctx) error {
 	})
 }
 
-func (s *AuthService) Profile(c *fiber.Ctx) error {
+func Profile(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(string)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Unauthorized"})
 	}
 
-	user, err := s.UserRepo.FindByID(userID)
+	user, err := repoPostgre.UserFindByID(userID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "User tidak ditemukan"})
 	}
 
-	permissions, _ := s.UserRepo.GetPermissionsByRoleID(user.RoleID)
+	permissions, _ := repoPostgre.GetPermissionsByRoleID(user.RoleID)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status": "success",
