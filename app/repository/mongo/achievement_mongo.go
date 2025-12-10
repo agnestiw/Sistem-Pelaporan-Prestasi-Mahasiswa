@@ -51,11 +51,12 @@ func DeleteAchievement(ctx context.Context, mongoID string) error {
 	return err
 }
 
-func FindAchievementByID(ctx context.Context, collection *mongo.Collection, id string) (*model.Achievement, error) {
+func FindAchievementByID(ctx context.Context, id string) (model.AchievementResponseV2, error) {
+	collection := database.MongoDb.Collection("achievements")
 
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, err
+		return model.AchievementResponseV2{}, err
 	}
 
 	var achievement model.Achievement
@@ -65,11 +66,17 @@ func FindAchievementByID(ctx context.Context, collection *mongo.Collection, id s
 	).Decode(&achievement)
 
 	if err != nil {
-		return nil, err
+		return model.AchievementResponseV2{}, err
 	}
 
-	return &achievement, nil
+	response := model.AchievementResponseV2{
+		Achievement: achievement,
+		Details:     achievement.Details,
+	}
+
+	return response, nil
 }
+
 
 func (r *AchievementRepo) Delete(ctx context.Context, id string) error {
 	oid, _ := primitive.ObjectIDFromHex(id)

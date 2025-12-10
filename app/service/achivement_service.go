@@ -13,7 +13,6 @@ import (
 	modelPg "sistem-prestasi/app/model/postgre"
 	repoMongo "sistem-prestasi/app/repository/mongo"
 	repoPg "sistem-prestasi/app/repository/postgre"
-	"sistem-prestasi/database"
 )
 
 func GetAllAchievementsService(c *fiber.Ctx) error {
@@ -218,30 +217,23 @@ func GetAchievementDetailService(c *fiber.Ctx) error {
 		})
 	}
 
-	collection := database.MongoDb.Collection("achievements")
 	ctx := context.Background()
-	mongoDetail, err := repoMongo.FindAchievementByID(ctx, collection, id)
-
+	achievement, err := repoMongo.FindAchievementByID(ctx, ref.MongoAchievementID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
-			"error": "Detail data missing",
+			"error":    "Detail data missing",
+			"mongo_ID": ref.MongoAchievementID,
+			"message":  err.Error(),
 		})
 	}
 
 	response := modelMongo.AchievementResponse{
-		ID:              ref.ID,
-		MongoID:         ref.MongoAchievementID,
-		StudentID:       ref.StudentID,
-		StudentName:     ref.StudentName,
-		Status:          ref.Status,
-		Title:           mongoDetail.Title,
-		Description:     mongoDetail.Description,
-		Details:         mongoDetail.Details,
-		Tags:            mongoDetail.Tags,
-		Points:          mongoDetail.Points,
-		AchievementType: mongoDetail.AchievementType,
-		CreatedAt:       ref.CreatedAt,
-		SubmittedAt:     ref.SubmittedAt,
+		ID:          ref.ID,
+		MongoID:     ref.MongoAchievementID,
+		StudentID:   ref.StudentID,
+		StudentName: ref.StudentName,
+		Status:      ref.Status,
+		Details:     achievement.Details,
 	}
 
 	return c.JSON(fiber.Map{"data": response})

@@ -23,8 +23,6 @@ type AchievementResponse struct {
 	StudentName        string                 `json:"student_name"`
 	Status             string                 `json:"status"`
 	AchievementType    string                 `json:"achievement_type"`
-	Title              string                 `json:"title"`
-	Description        string                 `json:"description"`
 	Details            map[string]interface{} `json:"details,omitempty"`
 	Points             int                    `json:"points"`
 	Tags 			   []string 			  `json:"tags,omitempty"`
@@ -33,4 +31,9 @@ type AchievementResponse struct {
 	VerifiedAt         *time.Time             `json:"verified_at"`
 	VerifiedBy         *string                `json:"verified_by"`
 	RejectionNote      *string                `json:"rejection_note"`
+}
+
+type AchievementResponseV2 struct {
+	Achievement	Achievement         `json:"achievement"`
+	Details     map[string]interface{} `json:"details,omitempty"`
 }
