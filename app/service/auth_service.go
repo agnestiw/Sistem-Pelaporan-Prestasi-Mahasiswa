@@ -35,6 +35,7 @@ func Login(c *fiber.Ctx) error {
 		user.RoleID,
 		user.RoleName,
 		user.StudentID, // ✅ TERISI DARI JOIN students
+		user.AdvisorID,
 		permissions,
 		time.Hour,
 	)
@@ -44,6 +45,7 @@ func Login(c *fiber.Ctx) error {
 		user.RoleID,
 		user.RoleName,
 		user.StudentID,
+		user.AdvisorID,
 		permissions,
 		time.Hour*24*7,
 	)
@@ -86,6 +88,7 @@ func Refresh(c *fiber.Ctx) error {
 	roleID := claims["role_id"].(string)
 	roleName := claims["role_name"].(string)
 	studentID := claims["student_id"].(string)
+	advisor_id := claims["advisor_id"].(string)
 	
 	var permissions []string
 	if permInter, ok := claims["permissions"].([]interface{}); ok {
@@ -94,7 +97,7 @@ func Refresh(c *fiber.Ctx) error {
 		}
 	}
 
-	newAccessToken, _ := helper.GenerateJWT(userID, roleID, roleName, &studentID, permissions, time.Hour*1)
+	newAccessToken, _ := helper.GenerateJWT(userID, roleID, roleName, &studentID, &advisor_id, permissions, time.Hour*1)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status": "success",

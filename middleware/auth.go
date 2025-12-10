@@ -45,6 +45,7 @@ func Protect() fiber.Handler {
 		c.Locals("role_id", claims["role_id"])
 		c.Locals("role_name", claims["role_name"])
 		c.Locals("student_id", claims["student_id"])
+		c.Locals("advisor_id", claims["advisor_id"])
 
 		var permissions []string
 		if permClaim, ok := claims["permissions"]; ok && permClaim != nil {

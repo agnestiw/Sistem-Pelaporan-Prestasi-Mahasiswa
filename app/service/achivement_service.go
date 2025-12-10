@@ -289,3 +289,53 @@ func SubmitAchievementService(c *fiber.Ctx) error {
 		"data":    result,
 	})
 }
+
+func VerifyAchievementService(c *fiber.Ctx) error {
+
+	achievement_references_id := c.Params("achievement_references_id")
+	roleName := c.Locals("role_name")
+
+	if roleName == "Mahasiswa" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "Hanya Admin yang bisa verifikasi achievement",
+		})
+	}
+
+	if roleName == "Dosen Wali" {
+
+		advisorID, ok := c.Locals("advisor_id").(string)
+		if !ok || advisorID == "" {
+			return c.Status(401).JSON(fiber.Map{
+				"message": "advisor_id pada token tidak valid",
+			})
+		}
+
+		refAdvisorID, err := repoPg.GetAdvisorIDByAchievementRef(achievement_references_id)
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{
+				"message": "achievement tidak ditemukan",
+				"error" :   err.Error(),
+			})
+		}
+
+		if advisorID != refAdvisorID {
+			return c.Status(403).JSON(fiber.Map{
+				"message": "Anda bukan dosen wali dari achievement ini",
+			})
+		}
+	}
+
+	result, err := repoPg.VerifyAchievementRepo(achievement_references_id)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "tidak dapat verify achievement_references",
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "berhasil verify achievement",
+		"data":    result,
+	})
+
+}

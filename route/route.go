@@ -32,6 +32,7 @@ func SetupRoutes(app *fiber.App) {
 	achievments.Post("/", service.CreateAchievementService)
 	achievments.Get("/:id", service.GetAchievementDetailService)
 	achievments.Post("/:achievement_references_id/submit", service.SubmitAchievementService)
+	achievments.Post("/:achievement_references_id/verify", service.VerifyAchievementService)
 
 	students := api.Group("/students")
 	students.Use(middleware.Protect())

@@ -24,6 +24,18 @@ func GetStudentIdFromAchievementReferences(achievementReferenceID string) (strin
 	return studentID, nil
 }
 
+func GetAdvisorIDByAchievementRef(refID string) (string, error) {
+	var advisorID string
+
+	err := database.DB.QueryRow(`
+		SELECT s.advisor_id
+		FROM achievement_references ar
+		JOIN students s ON ar.student_id = s.id
+		WHERE ar.id = $1
+	`, refID).Scan(&advisorID)
+
+	return advisorID, err
+}
 
 func GetAllAchievementsRepo() ([]modelPostgres.AchievementReference, error) {
 	query := `
@@ -84,9 +96,8 @@ func CreateAchievementRef(ref modelPostgres.AchievementReference) error {
 	return err
 }
 
-
 func GetAllAchievementByStudentID(studentID string) ([]modelPostgres.AchievementReference, error) {
-    query := `
+	query := `
         SELECT 
             ar.id, 
             ar.student_id, 
@@ -102,39 +113,37 @@ func GetAllAchievementByStudentID(studentID string) ([]modelPostgres.Achievement
         ORDER BY ar.created_at DESC
     `
 
-    rows, err := database.DB.Query(query, studentID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	rows, err := database.DB.Query(query, studentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var results []modelPostgres.AchievementReference
+	var results []modelPostgres.AchievementReference
 
-    for rows.Next() {
-        var data modelPostgres.AchievementReference
+	for rows.Next() {
+		var data modelPostgres.AchievementReference
 
-        err := rows.Scan(
-            &data.ID,
-            &data.StudentID,
-            &data.MongoAchievementID,
-            &data.Status,
-            &data.SubmittedAt,
-            &data.VerifiedAt,
-            &data.VerifiedBy,
-            &data.RejectionNote,
-            &data.CreatedAt,
-        )
-        if err != nil {
-            return nil, err
-        }
+		err := rows.Scan(
+			&data.ID,
+			&data.StudentID,
+			&data.MongoAchievementID,
+			&data.Status,
+			&data.SubmittedAt,
+			&data.VerifiedAt,
+			&data.VerifiedBy,
+			&data.RejectionNote,
+			&data.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
 
-        results = append(results, data)
-    }
+		results = append(results, data)
+	}
 
-    return results, nil
+	return results, nil
 }
-
-
 
 func UpdateAchievementRefUpdatedAt(id string) error {
 	query := `
@@ -197,6 +206,32 @@ func SubmitAchievementRepo(achievement_references_id string) (bool, error) {
 			submitted_at = NOW()
 		WHERE id = $1
     `, achievement_references_id)
+
+	if err != nil {
+		return false, err
+	}
+
+	rowsEffected, err := query.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	if rowsEffected == 0 {
+		return false, nil
+	}
+
+	return true, err
+
+}
+
+func VerifyAchievementRepo(achievement_references_id string) (bool, error) {
+
+	query, err := database.DB.Exec(`
+		UPDATE achievement_references
+		SET status = 'verified',
+			verified_at = NOW()
+		WHERE id = $1
+	`, achievement_references_id)
 
 	if err != nil {
 		return false, err
