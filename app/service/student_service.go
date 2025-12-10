@@ -8,10 +8,58 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// GetMyStudents: Digunakan oleh Dosen untuk melihat mahasiswa bimbingannya sendiri
+// func GetMyStudents(c *fiber.Ctx) error {
+
+
+    // loggedInUserID := c.Locals("user_id").(string)
+	
+	
+
+   
+    // lecturer, err := repoPostgre.FindLecturerByUserID(loggedInUserID)
+    // if err != nil {
+    //     return c.Status(404).JSON(fiber.Map{
+    //         "message": "Data dosen tidak ditemukan untuk user ini. Apakah anda login sebagai Dosen?",
+    //     })
+    // }
+
+    // // 3. Ambil mahasiswa bimbingan menggunakan ID Dosen yang ditemukan
+    // students, err := repoPostgre.FindLecturerAdvisees(lecturer.ID)
+    // if err != nil {
+    //     return c.Status(500).JSON(fiber.Map{
+    //         "message": "Gagal mengambil data mahasiswa bimbingan",
+    //         "error":   err.Error(),
+    //     })
+    // }
+
+    // return c.Status(200).JSON(fiber.Map{"status": "success", "data": students})
+// }
+
+
+
+
 func GetAll(c *fiber.Ctx) error {
-	students, err := repoPostgre.FindAll()
+
+	// ngambil role yang di jwt 
+	nama_role := c.Locals("role_name")
+	if nama_role == "Mahasiswa" {
+		return c.Status(403).JSON(fiber.Map{
+			"message": "anda bukan seorang admin maupun dosen",
+		})
+	}
+	
+	if nama_role == "Dosen Wali" {
+		
+	}
+
+
+	students, err := repoPostgre.StudentFindAll()
 	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"message": "Gagal mengambil data mahasiswa"})
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Gagal mengambil data mahasiswa",
+			"error":   err.Error(),
+		})
 	}
 	return c.Status(200).JSON(fiber.Map{"status": "success", "data": students})
 }

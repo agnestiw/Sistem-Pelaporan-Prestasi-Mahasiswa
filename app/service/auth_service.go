@@ -10,49 +10,61 @@ import (
 	memory "sistem-prestasi/memory"
 
 	"github.com/gofiber/fiber/v2"
-	"golang.org/x/crypto/bcrypt"
 )
 
 
 func Login(c *fiber.Ctx) error {
 	var req modelPostgre.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request body"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid request body",
+		})
 	}
 
-	user, err := repoPostgre.FindByUsername(req.Username)
+	user, err := repoPostgre.Authenticate(req.Username, req.Password)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": err.Error(),
+		})
 	}
 
 	permissions, _ := repoPostgre.GetPermissionsByRoleID(user.RoleID)
 
-	accessToken, _ := helper.GenerateJWT(user.ID, user.RoleID, permissions, time.Hour*1)
-	refreshToken, _ := helper.GenerateJWT(user.ID, user.RoleID, permissions, time.Hour*24*7)
+	accessToken, _ := helper.GenerateJWT(
+		user.ID,
+		user.RoleID,
+		user.RoleName,
+		user.StudentID, // ✅ TERISI DARI JOIN students
+		permissions,
+		time.Hour,
+	)
 
-	response := modelPostgre.LoginResponse{
-		Token:        accessToken,
-		RefreshToken: refreshToken,
-		User: modelPostgre.UserDetail{
-			ID:          user.ID,
-			Username:    user.Username,
-			FullName:    user.FullName,
-			RoleID:	   user.RoleID,
-			Role:        user.RoleName,
-			Permissions: permissions,
-		},
-	}
+	refreshToken, _ := helper.GenerateJWT(
+		user.ID,
+		user.RoleID,
+		user.RoleName,
+		user.StudentID,
+		permissions,
+		time.Hour*24*7,
+	)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"status":  "success",
-		"message": "Login berhasil",
-		"data":    response,
+		"status": "success",
+		"data": modelPostgre.LoginResponse{
+			Token:        accessToken,
+			RefreshToken: refreshToken,
+			User: modelPostgre.UserDetail{
+				ID:          user.ID,
+				Username:    user.Username,
+				FullName:    user.FullName,
+				RoleID:      user.RoleID,
+				Role:        user.RoleName,
+				Permissions: permissions,
+			},
+		},
 	})
 }
+
 
 func Refresh(c *fiber.Ctx) error {
 	var req modelPostgre.RefreshRequest
@@ -72,6 +84,8 @@ func Refresh(c *fiber.Ctx) error {
 
 	userID := claims["user_id"].(string)
 	roleID := claims["role_id"].(string)
+	roleName := claims["role_name"].(string)
+	studentID := claims["student_id"].(string)
 	
 	var permissions []string
 	if permInter, ok := claims["permissions"].([]interface{}); ok {
@@ -80,7 +94,7 @@ func Refresh(c *fiber.Ctx) error {
 		}
 	}
 
-	newAccessToken, _ := helper.GenerateJWT(userID, roleID, permissions, time.Hour*1)
+	newAccessToken, _ := helper.GenerateJWT(userID, roleID, roleName, &studentID, permissions, time.Hour*1)
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status": "success",

@@ -4,6 +4,7 @@ import "time"
 
 type User struct {
 	ID           string    `json:"id" db:"id"`
+	StudentID    *string   `json:"student_id,omitempty" db:"student_id"`
 	Username     string    `json:"username" db:"username"`
 	Email        string    `json:"email" db:"email"`
 	PasswordHash string    `json:"-" db:"password_hash"`

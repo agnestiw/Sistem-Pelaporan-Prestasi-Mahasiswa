@@ -12,7 +12,6 @@ type Student struct {
 	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
 }
 
-// gabungan Student + User + Dosen Wali
 type StudentDetail struct {
 	ID           string  `json:"id"`
 	UserID       string  `json:"userId"`

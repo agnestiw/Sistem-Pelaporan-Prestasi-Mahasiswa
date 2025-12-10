@@ -39,17 +39,33 @@ func GetProfile(userId string) (*postgre.User, error) {
 
 }
 
-func Authenticate(email string, password string) (*postgre.User, error) {
+func Authenticate(username string, password string) (*postgre.User, error) {
 
 	var User postgre.User
 
 	err := database.DB.QueryRow(`
-			SELECT u.id, u.username, u.email, u.full_name, u.password_hash, u.role_id, r.name  
-			FROM users as u
-			JOIN roles as r on u.role_id = r.id
-			WHERE u.email = $1
-		`, email).Scan(
-		&User.ID, &User.Username, &User.Email, &User.FullName, &User.PasswordHash, &User.RoleID, &User.RoleName,
+		SELECT 
+			u.id,
+			u.username,
+			u.email,
+			u.full_name,
+			u.password_hash,
+			u.role_id,
+			r.name,
+			s.id AS student_id
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		LEFT JOIN students s ON s.user_id = u.id
+		WHERE u.username = $1
+		`, username).Scan(
+		&User.ID,
+		&User.Username,
+		&User.Email,
+		&User.FullName,
+		&User.PasswordHash,
+		&User.RoleID,
+		&User.RoleName,
+		&User.StudentID,
 	)
 
 	if err == sql.ErrNoRows {

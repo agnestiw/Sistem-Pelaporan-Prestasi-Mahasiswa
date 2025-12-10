@@ -26,15 +26,21 @@ func SetupRoutes(app *fiber.App) {
 	users.Delete("/:id", service.DeleteUser)
 	users.Put("/:id/role", service.AssignRole)
 
+	achievments := api.Group("/achievements")
+	achievments.Use(middleware.Protect())
+	achievments.Get("/", service.GetAllAchievementsService)
+	achievments.Post("/", service.CreateAchievementService)
+	achievments.Get("/:id", service.GetAchievementDetailService)
+	achievments.Post("/:achievement_references_id/submit", service.SubmitAchievementService)
+
 	students := api.Group("/students")
 	students.Use(middleware.Protect())
-	students.Get("/", middleware.HasPermission("user:manage"), service.GetAll)
+	students.Get("/", service.GetAll) 
 	students.Get("/:id", service.StudentFindByID)
 	students.Put("/:id/advisor", service.AssignAdvisor)
-	// students.Get("/:id/achievements"), studentService.GetAchievements)
 
 	lecturers := api.Group("/lecturers")
 	lecturers.Use(middleware.Protect())
-	lecturers.Get("/", middleware.HasPermission("user:manage"), service.GetAllLecturers)
+	lecturers.Get("/", service.GetMyAdvisor) 
 	lecturers.Get("/:id/advisees", service.GetLecturerAdvisees)
 }
