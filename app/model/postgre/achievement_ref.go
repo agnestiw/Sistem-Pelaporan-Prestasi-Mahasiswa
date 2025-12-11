@@ -1,6 +1,9 @@
 package postgre
 
-import "time"
+import (
+	"sistem-prestasi/app/model/mongo"
+	"time"
+)
 
 type AchievementReference struct {
 	ID                 string     `json:"id" db:"id"`
@@ -15,7 +18,23 @@ type AchievementReference struct {
 	UpdatedAt          time.Time  `json:"updated_at" db:"updated_at"`
 }
 
+type HistoryItem struct {
+	Status    string    `json:"status"`
+	Timestamp time.Time `json:"timestamp"`
+	Note      string    `json:"note"`
+}
+
+type HistoryResponse struct {
+	Reference   *AchievementRefWithStudent  
+	Achievement *mongo.AchievementResponseV2 `json:"achievement"`
+	History     []HistoryItem                `json:"history"`
+}
+
 type AchievementRefWithStudent struct {
-    AchievementReference 
-    StudentName string 
+	AchievementReference
+	StudentName string
+}
+
+type RejectAchievementRequest struct {
+	RejectionNote string `json:"rejection_note" validate:"required"`
 }

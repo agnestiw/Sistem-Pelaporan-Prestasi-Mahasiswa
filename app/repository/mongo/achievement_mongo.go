@@ -3,8 +3,10 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	model "sistem-prestasi/app/model/mongo"
 	"sistem-prestasi/database"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -49,6 +51,26 @@ func DeleteAchievement(ctx context.Context, mongoID string) error {
 	})
 
 	return err
+}
+
+func UploadAttachmentAchievemenRepo(achievementReferencesID string, fileName string) (string, error) {
+    collection := database.MongoDb.Collection("achievement_attachments")
+
+    folder := fmt.Sprintf("%s", achievementReferencesID)
+
+    doc := bson.M{
+        "achievement_references_id": achievementReferencesID,
+        "file_name":                 fileName,
+        "folder":                    folder,
+        "created_at":                time.Now(),
+    }
+
+    _, err := collection.InsertOne(context.Background(), doc)
+    if err != nil {
+        return "", err
+    }
+
+    return folder, nil
 }
 
 func FindAchievementByID(ctx context.Context, id string) (model.AchievementResponseV2, error) {

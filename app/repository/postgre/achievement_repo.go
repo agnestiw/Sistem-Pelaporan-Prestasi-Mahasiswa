@@ -2,10 +2,12 @@ package postgre
 
 import (
 	modelPostgres "sistem-prestasi/app/model/postgre"
-	// modelMongo "sistem-prestasi/app/model/postgre"
 	"sistem-prestasi/database"
 	"time"
 )
+
+
+
 
 func GetStudentIdFromAchievementReferences(achievementReferenceID string) (string, error) {
 	var studentID string
@@ -232,6 +234,34 @@ func VerifyAchievementRepo(achievement_references_id string) (bool, error) {
 			verified_at = NOW()
 		WHERE id = $1
 	`, achievement_references_id)
+
+	if err != nil {
+		return false, err
+	}
+
+	rowsEffected, err := query.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	if rowsEffected == 0 {
+		return false, nil
+	}
+
+	return true, err
+
+}
+
+func RejectAchievementRepo(achievement_references_id string, rejection_note string, verified_by string) (bool, error) {
+
+	query, err := database.DB.Exec(`
+		UPDATE achievement_references
+		SET status = 'rejected',
+			rejection_note = $2,
+			verified_by = $3,
+			verified_at = NOW()
+		WHERE id = $1
+	`, achievement_references_id, rejection_note, verified_by)
 
 	if err != nil {
 		return false, err

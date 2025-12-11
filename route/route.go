@@ -33,6 +33,9 @@ func SetupRoutes(app *fiber.App) {
 	achievments.Get("/:id", service.GetAchievementDetailService)
 	achievments.Post("/:achievement_references_id/submit", service.SubmitAchievementService)
 	achievments.Post("/:achievement_references_id/verify", service.VerifyAchievementService)
+	achievments.Post("/:achievement_references_id/reject", service.RejectAchievementService)
+	achievments.Post("/:achievement_references_id/attachment", service.UploadAttachmentAchievementService)
+	achievments.Get("/:achievement_references_id/history", service.GetAchievementHistoryService)
 
 	students := api.Group("/students")
 	students.Use(middleware.Protect())
@@ -44,4 +47,10 @@ func SetupRoutes(app *fiber.App) {
 	lecturers.Use(middleware.Protect())
 	lecturers.Get("/", service.GetMyAdvisor) 
 	lecturers.Get("/:id/advisees", service.GetLecturerAdvisees)
+
+
+
+	analytics := api.Group("/analytics")
+	analytics.Use(middleware.Protect())
+
 }
