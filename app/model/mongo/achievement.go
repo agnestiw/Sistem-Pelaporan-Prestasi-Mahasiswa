@@ -1,9 +1,13 @@
 package mongo
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Achievement struct {
-	ID              string                 `bson:"_id,omitempty" json:"id"`
+	ID              primitive.ObjectID     `bson:"_id,omitempty" json:"id"`
 	StudentID       string                 `bson:"studentId" json:"studentId"`
 	AchievementType string                 `bson:"achievementType" json:"achievementType"`
 	Title           string                 `bson:"title" json:"title"`
@@ -17,8 +21,8 @@ type Achievement struct {
 }
 
 type AchievementResponse struct {
-	ID                 string                 `json:"id"`                   // ID Postgres (UUID)
-	MongoID            string                 `json:"mongo_achievement_id"` // ID Mongo
+	ID                 string                 `json:"id"`                   
+	MongoID            string                 `json:"mongo_achievement_id"`
 	StudentID          string                 `json:"student_id"`
 	StudentName        string                 `json:"student_name"`
 	Status             string                 `json:"status"`
@@ -33,7 +37,27 @@ type AchievementResponse struct {
 	RejectionNote      *string                `json:"rejection_note"`
 }
 
-type AchievementResponseV2 struct {
-	Achievement	Achievement         `json:"achievement"`
-	Details     map[string]interface{} `json:"details,omitempty"`
+type CreateAchievementRequest struct {
+	StudentID       string                 `json:"studentId"`
+	AchievementType string                 `json:"achievementType"`
+	Title           string                 `json:"title"`
+	Description     string                 `json:"description"`
+	Points          int                    `json:"points"`
+	Details         map[string]interface{} `json:"details"`
+	Tags            []string               `json:"tags"`
 }
+
+type UpdateAchievementRequest struct {
+	AchievementType string                 `json:"achievementType,omitempty"`
+	Title           string                 `json:"title,omitempty"`
+	Description     string                 `json:"description,omitempty"`
+	Points          *int                   `json:"points,omitempty"`
+	Details         map[string]interface{} `json:"details,omitempty"`
+	Tags            []string               `json:"tags,omitempty"`
+}
+
+
+// type AchievementResponseV2 struct {
+// 	Achievement	Achievement         `json:"achievement"`
+// 	Details     map[string]interface{} `json:"details,omitempty"`
+// }

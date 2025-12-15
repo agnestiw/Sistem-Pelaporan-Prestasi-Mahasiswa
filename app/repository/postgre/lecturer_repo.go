@@ -85,3 +85,40 @@ func FindLecturerAdvisees(lecturerID string) ([]modelPostgre.StudentDetail, erro
 	}
 	return students, nil
 }
+
+
+func GetLecturersRepo() ([]modelPostgre.LecturerDetail, error) {
+	var lecturers []modelPostgre.LecturerDetail
+	
+	rows, err := database.DB.Query(`
+		SELECT 
+			l.id,
+			l.lecturer_id,
+			u.full_name,
+			u.email,
+			l.department
+		FROM lecturers l
+		JOIN users u ON u.id = l.user_id
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var lecturer modelPostgre.LecturerDetail
+		err := rows.Scan(
+			&lecturer.ID,
+			&lecturer.LecturerID,
+			&lecturer.FullName,
+			&lecturer.Email,
+			&lecturer.Department,
+		)
+		if err != nil {
+			return nil, err
+		}
+		lecturers = append(lecturers, lecturer)
+	}
+
+	return lecturers, nil
+}

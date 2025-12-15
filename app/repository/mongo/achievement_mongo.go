@@ -4,6 +4,7 @@ package mongo
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	model "sistem-prestasi/app/model/mongo"
 	"sistem-prestasi/database"
 	"time"
@@ -40,14 +41,34 @@ func InsertAchievement(ctx context.Context, input model.Achievement) (string, er
 		return "", err
 	}
 
-	return result.InsertedID.(interface{}).(string), nil
+	oid := result.InsertedID.(primitive.ObjectID)
+	return oid.Hex(), nil
 }
 
 func DeleteAchievement(ctx context.Context, mongoID string) error {
 	collection := database.MongoDb.Collection("achievements")
 
-	_, err := collection.DeleteOne(ctx, bson.M{
-		"_id": mongoID,
+	oid, err := primitive.ObjectIDFromHex(mongoID)
+	if err != nil {
+		return err
+	}
+
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": oid})
+	return err
+}
+
+func TouchAchievement(ctx context.Context, mongoID string) error {
+	collection := database.MongoDb.Collection("achievements")
+
+	oid, err := primitive.ObjectIDFromHex(mongoID)
+	if err != nil {
+		return err
+	}
+
+	_, err = collection.UpdateByID(ctx, oid, bson.M{
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+		},
 	})
 
 	return err
@@ -73,12 +94,59 @@ func UploadAttachmentAchievemenRepo(achievementReferencesID string, fileName str
     return folder, nil
 }
 
-func FindAchievementByID(ctx context.Context, id string) (model.AchievementResponseV2, error) {
+func GetAttachmentsByReferenceID(
+	ctx context.Context,
+	referenceID string,
+) ([]model.Attachment, error) {
+
+	collection := database.MongoDb.Collection("achievement_attachments")
+
+	cursor, err := collection.Find(
+		ctx,
+		bson.M{"achievement_references_id": referenceID},
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var attachments []model.Attachment
+
+	for cursor.Next(ctx) {
+		var raw bson.M
+		if err := cursor.Decode(&raw); err != nil {
+			return nil, err
+		}
+
+		fileName, _ := raw["file_name"].(string)
+
+		var uploadedAt time.Time
+		if dt, ok := raw["created_at"].(primitive.DateTime); ok {
+			uploadedAt = dt.Time()
+		}
+
+		attachments = append(attachments, model.Attachment{
+			FileName: fileName,
+			FileURL: fmt.Sprintf(
+				"/uploads/achievements/%s/%s",
+				referenceID,
+				fileName,
+			),
+			FileType:   filepath.Ext(fileName),
+			UploadedAt: uploadedAt,
+		})
+	}
+
+	return attachments, nil
+}
+
+
+func FindAchievementByID(ctx context.Context, id string) (model.Achievement, error) {
 	collection := database.MongoDb.Collection("achievements")
 
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return model.AchievementResponseV2{}, err
+		return model.Achievement{}, err
 	}
 
 	var achievement model.Achievement
@@ -88,15 +156,10 @@ func FindAchievementByID(ctx context.Context, id string) (model.AchievementRespo
 	).Decode(&achievement)
 
 	if err != nil {
-		return model.AchievementResponseV2{}, err
+		return model.Achievement{}, err
 	}
 
-	response := model.AchievementResponseV2{
-		Achievement: achievement,
-		Details:     achievement.Details,
-	}
-
-	return response, nil
+	return achievement, nil
 }
 
 
@@ -106,23 +169,40 @@ func (r *AchievementRepo) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func UpdateAchievementByID(
+// func UpdateAchievementByID(ctx context.Context, mongoID string, input model.Achievement) error {
+// 	collection := database.MongoDb.Collection("achievements")
+
+// 	objectID, err := primitive.ObjectIDFromHex(mongoID)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	update := bson.M{
+// 		"$set": input,
+// 	}
+
+// 	_, err = collection.UpdateByID(ctx, objectID, update)
+// 	return err
+// }
+
+
+func UpdateAchievementFieldsByID(
 	ctx context.Context,
 	mongoID string,
-	input model.Achievement,
+	fields bson.M,
 ) error {
 
 	collection := database.MongoDb.Collection("achievements")
 
-	objectID, err := primitive.ObjectIDFromHex(mongoID)
+	oid, err := primitive.ObjectIDFromHex(mongoID)
 	if err != nil {
 		return err
 	}
 
-	update := bson.M{
-		"$set": input,
-	}
-
-	_, err = collection.UpdateByID(ctx, objectID, update)
+	_, err = collection.UpdateByID(
+		ctx,
+		oid,
+		bson.M{"$set": fields},
+	)
 	return err
 }

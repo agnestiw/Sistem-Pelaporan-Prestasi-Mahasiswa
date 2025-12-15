@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"strings"
 
 	"sistem-prestasi/helper"
@@ -64,21 +63,3 @@ func Protect() fiber.Handler {
 }
 
 
-func HasPermission(requiredPerm string) fiber.Handler {
-    return func(c *fiber.Ctx) error {
-        userPerms, ok := c.Locals("permissions").([]string)
-        if !ok {
-            return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"message": "Forbidden: Permission tidak ditemukan"})
-        }
-
-        for _, p := range userPerms {
-            if p == requiredPerm {
-                return c.Next() 
-            }
-        }
-
-        return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-            "message": fmt.Sprintf("Forbidden: Anda tidak memiliki akses '%s'", requiredPerm),
-        })
-    }
-}

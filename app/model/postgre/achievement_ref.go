@@ -26,7 +26,7 @@ type HistoryItem struct {
 
 type HistoryResponse struct {
 	Reference   *AchievementRefWithStudent  
-	Achievement *mongo.AchievementResponseV2 `json:"achievement"`
+	Achievement *mongo.Achievement `json:"achievement"`
 	History     []HistoryItem                `json:"history"`
 }
 

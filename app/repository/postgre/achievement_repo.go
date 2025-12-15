@@ -8,7 +8,6 @@ import (
 
 
 
-
 func GetStudentIdFromAchievementReferences(achievementReferenceID string) (string, error) {
 	var studentID string
 
@@ -98,6 +97,47 @@ func CreateAchievementRef(ref modelPostgres.AchievementReference) error {
 	return err
 }
 
+func GetAchievementDetailByAchievementIDRepo(achievementID string,) (*modelPostgres.AchievementRefWithStudent, error) {
+	var result modelPostgres.AchievementRefWithStudent
+	err := database.DB.QueryRow(`
+		SELECT
+			ar.id,
+			ar.student_id,
+			ar.mongo_achievement_id,
+			ar.status,
+			ar.submitted_at,
+			ar.verified_at,
+			ar.verified_by,
+			ar.rejection_note,
+			ar.created_at,
+			ar.updated_at,
+			u.full_name AS student_name
+		FROM achievement_references ar
+		JOIN students s ON s.id = ar.student_id
+		JOIN users u ON u.id = s.user_id
+		WHERE ar.id = $1
+	`, achievementID).Scan(
+		&result.ID,
+		&result.StudentID,
+		&result.MongoAchievementID,
+		&result.Status,
+		&result.SubmittedAt,
+		&result.VerifiedAt,
+		&result.VerifiedBy,
+		&result.RejectionNote,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+		&result.StudentName,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+
 func GetAllAchievementByStudentID(studentID string) ([]modelPostgres.AchievementReference, error) {
 	query := `
         SELECT 
@@ -158,8 +198,21 @@ func UpdateAchievementRefUpdatedAt(id string) error {
 	return err
 }
 
-func GetAchievementRefByID(id string) (*modelPostgres.AchievementRefWithStudent, error) {
+func SoftDeleteAchievementRef(id string) error {
+	query := `
+		UPDATE achievement_references
+		SET status = 'deleted', updated_at = NOW()
+		WHERE id = $1
+	`
 
+	_, err := database.DB.Exec(query, id)
+	return err
+}
+
+
+func GetAchievementRefByID(id string) (*modelPostgres.AchievementRefWithStudent, error) {
+	var data modelPostgres.AchievementRefWithStudent
+	
 	query := `
         SELECT 
             ar.id, 
@@ -167,9 +220,9 @@ func GetAchievementRefByID(id string) (*modelPostgres.AchievementRefWithStudent,
             ar.mongo_achievement_id, 
             ar.status, 
             ar.submitted_at, 
-            ar.verified_at,      -- Tambahkan ini agar lengkap
-            ar.verified_by,      -- Tambahkan ini agar lengkap
-            ar.rejection_note,   -- Tambahkan ini agar lengkap
+            ar.verified_at,   
+            ar.verified_by,   
+            ar.rejection_note,
             ar.created_at,
             u.full_name as student_name
         FROM achievement_references ar
@@ -177,8 +230,6 @@ func GetAchievementRefByID(id string) (*modelPostgres.AchievementRefWithStudent,
         JOIN users u ON s.user_id = u.id
         WHERE ar.id = $1
     `
-
-	var data modelPostgres.AchievementRefWithStudent
 
 	err := database.DB.QueryRow(query, id).Scan(
 		&data.ID,

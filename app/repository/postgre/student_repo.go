@@ -1,108 +1,162 @@
 package postgre
 
 import (
-	"database/sql"
-	modelPostgre "sistem-prestasi/app/model/postgre"
+	model "sistem-prestasi/app/model/postgre"
 	"sistem-prestasi/database"
 )
 
-func FindStudentByUserID(userID string) (*modelPostgre.StudentDetail, error) {
-    query := `
-        SELECT s.id, s.user_id, s.student_id, u.full_name, u.email, s.program_study, u_lec.full_name as advisor_name
-        FROM students s
-        JOIN users u ON s.user_id = u.id
-        LEFT JOIN lecturers l ON s.advisor_id = l.id
-        LEFT JOIN users u_lec ON l.user_id = u_lec.id
-        WHERE s.advisor_id = $1
-    `
-    var s modelPostgre.StudentDetail
-    var advisorName sql.NullString
+func GetAllStudentRepo() ([]model.Student, error) {
+	rows, err := database.DB.Query(`
+		SELECT id, user_id, student_id, program_study, academic_year, advisor_id, created_at
+		FROM students
+	`)
 
-    err := database.DB.QueryRow(query, userID).Scan(&s.ID, &s.UserID, &s.StudentID, &s.FullName, &s.Email, &s.ProgramStudy, &advisorName)
-    if err != nil {
-        return nil, err
-    }
-
-    if advisorName.Valid {
-        name := advisorName.String
-        s.AdvisorName = &name
-    }
-    return &s, nil
-}
-
-
-func StudentFindAll() ([]modelPostgre.StudentDetail, error) {
-	query := `
-		SELECT s.id, s.user_id, s.student_id, u.full_name, u.email, s.program_study, u_lec.full_name as advisor_name
-		FROM students s
-		JOIN users u ON s.user_id = u.id
-		LEFT JOIN lecturers l ON s.advisor_id = l.id
-		LEFT JOIN users u_lec ON l.user_id = u_lec.id
-		ORDER BY s.student_id ASC
-	`
-	rows, err := database.DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var students []modelPostgre.StudentDetail
-	for rows.Next() {
-		var s modelPostgre.StudentDetail
-		var advisorName sql.NullString
+	var students []model.Student
 
-		err := rows.Scan(&s.ID, &s.UserID, &s.StudentID, &s.FullName, &s.Email, &s.ProgramStudy, &advisorName)
+	for rows.Next() {
+		var s model.Student
+		err := rows.Scan(
+			&s.ID,
+			&s.UserID,
+			&s.StudentID,
+			&s.ProgramStudy,
+			&s.AcademicYear,
+			&s.AdvisorID,
+			&s.CreatedAt,
+		)
+
 		if err != nil {
 			return nil, err
 		}
 
-		if advisorName.Valid {
-			name := advisorName.String
-			s.AdvisorName = &name
-		}
 		students = append(students, s)
 	}
+
 	return students, nil
 }
 
-func StudentFindByID(id string) (*modelPostgre.StudentDetail, error) {
-	query := `
-		SELECT s.id, s.user_id, s.student_id, u.full_name, u.email, s.program_study, u_lec.full_name as advisor_name
-		FROM students s
-		JOIN users u ON s.user_id = u.id
-		LEFT JOIN lecturers l ON s.advisor_id = l.id
-		LEFT JOIN users u_lec ON l.user_id = u_lec.id
-		WHERE s.id = $1
-	`
-	var s modelPostgre.StudentDetail
-	var advisorName sql.NullString
+func GetStudentByIDRepo(ID string) (model.StudentDetail, error) {
 
-	err := database.DB.QueryRow(query, id).Scan(&s.ID, &s.UserID, &s.StudentID, &s.FullName, &s.Email, &s.ProgramStudy, &advisorName)
+	var student model.StudentDetail
+
+	err := database.DB.QueryRow(`
+		SELECT 
+			s.id,
+			s.user_id,
+			s.student_id,
+			u.full_name AS student_name,
+			u.email,
+			s.program_study,
+
+			ua.full_name AS advisor_name
+		FROM students s
+		JOIN users u ON u.id = s.user_id
+		LEFT JOIN lecturers l ON l.id = s.advisor_id
+		LEFT JOIN users ua ON ua.id = l.user_id
+		WHERE s.id = $1;
+	`, ID).Scan(
+		&student.ID,
+		&student.UserID,
+		&student.StudentID,
+		&student.FullName,
+		&student.Email,
+		&student.ProgramStudy,
+		&student.AdvisorName,
+	)
+
+	if err != nil {
+		return model.StudentDetail{}, err
+	}
+
+	return student, err
+
+}
+
+func GetStudentAchievementDetailRepo(refID string) (*model.StudentAchievement, error) {
+	var result model.StudentAchievement
+
+	err := database.DB.QueryRow(`
+		SELECT
+			s.id,
+			s.user_id,
+			s.student_id,
+			u.full_name,
+			u.email,
+			s.program_study,
+			ua.full_name AS advisor_name,
+
+			ar.id,
+			ar.student_id,
+			ar.mongo_achievement_id,
+			ar.status,
+			ar.submitted_at,
+			ar.verified_at,
+			ar.verified_by,
+			ar.rejection_note,
+			ar.created_at,
+			ar.updated_at
+
+		FROM achievement_references ar
+		JOIN students s ON s.id = ar.student_id
+		JOIN users u ON u.id = s.user_id
+		LEFT JOIN lecturers l ON l.id = s.advisor_id
+		LEFT JOIN users ua ON ua.id = l.user_id
+		WHERE s.id = $1
+	`, refID).Scan(
+		&result.StudentDetail.ID,
+		&result.StudentDetail.UserID,
+		&result.StudentDetail.StudentID,
+		&result.StudentDetail.FullName,
+		&result.StudentDetail.Email,
+		&result.StudentDetail.ProgramStudy,
+		&result.StudentDetail.AdvisorName,
+
+		&result.AchievementReference.ID,
+		&result.AchievementReference.StudentID,
+		&result.AchievementReference.MongoAchievementID,
+		&result.AchievementReference.Status,
+		&result.AchievementReference.SubmittedAt,
+		&result.AchievementReference.VerifiedAt,
+		&result.AchievementReference.VerifiedBy,
+		&result.AchievementReference.RejectionNote,
+		&result.AchievementReference.CreatedAt,
+		&result.AchievementReference.UpdatedAt,
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	if advisorName.Valid {
-		name := advisorName.String
-		s.AdvisorName = &name
+	return &result, nil
+}
+
+func SetStudentAdvisorRepo(student_id string, advisor_id string) (bool, error) {
+
+	query, err := database.DB.Exec(`
+		UPDATE students
+			SET advisor_id = $2
+		WHERE id = $1
+	`, student_id, advisor_id)
+
+	if err != nil {
+		return false, err
 	}
-	return &s, nil
-}
 
-func GetStudentByUserID(userID string) (string, error) {
-    var studentID string
-    query := `SELECT id FROM students WHERE user_id = $1`
-    
-    err := database.DB.QueryRow(query, userID).Scan(&studentID)
-    if err != nil {
-        return "", err
-    }
-    
-    return studentID, nil
-}
+	result, err := query.RowsAffected()
+	if err != nil {
+		return false, err
+	}
 
-func UpdateAdvisor(studentID, lecturerID string) error {
-	query := `UPDATE students SET advisor_id = $1 WHERE id = $2`
-	_, err := database.DB.Exec(query, lecturerID, studentID)
-	return err
+	if result == 0 {
+		return false, nil
+	}
+
+	return true, err
+
+
 }

@@ -1,107 +1,133 @@
 package service
 
 import (
-	modelPostgre "sistem-prestasi/app/model/postgre"
+	"context"
+	repoMongo "sistem-prestasi/app/repository/mongo"
 	repoPostgre "sistem-prestasi/app/repository/postgre"
-	"sistem-prestasi/helper"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// GetMyStudents: Digunakan oleh Dosen untuk melihat mahasiswa bimbingannya sendiri
-// func GetMyStudents(c *fiber.Ctx) error {
+func GetAllStudentService(c *fiber.Ctx) error {
 
-
-    // loggedInUserID := c.Locals("user_id").(string)
-	
-	
-
-   
-    // lecturer, err := repoPostgre.FindLecturerByUserID(loggedInUserID)
-    // if err != nil {
-    //     return c.Status(404).JSON(fiber.Map{
-    //         "message": "Data dosen tidak ditemukan untuk user ini. Apakah anda login sebagai Dosen?",
-    //     })
-    // }
-
-    // // 3. Ambil mahasiswa bimbingan menggunakan ID Dosen yang ditemukan
-    // students, err := repoPostgre.FindLecturerAdvisees(lecturer.ID)
-    // if err != nil {
-    //     return c.Status(500).JSON(fiber.Map{
-    //         "message": "Gagal mengambil data mahasiswa bimbingan",
-    //         "error":   err.Error(),
-    //     })
-    // }
-
-    // return c.Status(200).JSON(fiber.Map{"status": "success", "data": students})
-// }
-
-
-
-
-func GetAll(c *fiber.Ctx) error {
-
-	// ngambil role yang di jwt 
 	nama_role := c.Locals("role_name")
+
 	if nama_role == "Mahasiswa" {
 		return c.Status(403).JSON(fiber.Map{
 			"message": "anda bukan seorang admin maupun dosen",
 		})
 	}
-	
-	if nama_role == "Dosen Wali" {
-		
-	}
 
-
-	students, err := repoPostgre.StudentFindAll()
+	students, err := repoPostgre.GetAllStudentRepo()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"message": "Gagal mengambil data mahasiswa",
 			"error":   err.Error(),
 		})
 	}
-	return c.Status(200).JSON(fiber.Map{"status": "success", "data": students})
+
+	return c.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"data":   students,
+	})
 }
 
+func GetStudentByID(c *fiber.Ctx) error {
 
-func StudentFindByID(c *fiber.Ctx) error {
 	id := c.Params("id")
+	if id == "" {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "student id tidak valid",
+		})
+	}
 
-	student, err := repoPostgre.StudentFindByID(id)
+	hasil, err := repoPostgre.GetStudentByIDRepo(id)
 	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"message": "Mahasiswa tidak ditemukan"})
+		return c.Status(500).JSON(fiber.Map{
+			"message": "tidak dapat mengambil data student",
+			"error":   err.Error(),
+		})
 	}
 
-	loggedInUserID := c.Locals("user_id").(string)
+	return c.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"data":   hasil,
+	})
 
-	if !helper.IsAdmin(c) && student.UserID != loggedInUserID {
-		return c.Status(403).JSON(fiber.Map{"message": "Forbidden: Anda tidak boleh melihat profil mahasiswa lain"})
-	}
-
-	return c.Status(200).JSON(fiber.Map{"status": "success", "data": student})
 }
 
-func AssignAdvisor(c *fiber.Ctx) error {
+func GetStudentAchievementDetailService(c *fiber.Ctx) error {
+
 	id := c.Params("id")
-
-	var req modelPostgre.AssignAdvisorRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(400).JSON(fiber.Map{"message": "Invalid input"})
+	if id == "" {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "id student tidak valid",
+		})
 	}
 
-	student, err := repoPostgre.StudentFindByID(id)
+	result, err := repoPostgre.GetStudentAchievementDetailRepo(id)
 	if err != nil {
-		return c.Status(404).JSON(fiber.Map{"message": "Mahasiswa tidak ditemukan"})
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Gagal mengambil data reference",
+			"error":   err.Error(),
+		})
 	}
 
-	loggedInUserID := c.Locals("user_id").(string)
-	if !helper.IsAdmin(c) && student.UserID != loggedInUserID {
-		return c.Status(403).JSON(fiber.Map{"message": "Forbidden: Anda hanya boleh memilih dosen wali untuk diri sendiri"})
+	mongoData, err := repoMongo.FindAchievementByID(context.Background(), result.MongoAchievementID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": "Gagal mengambil data achievement di MongoDB",
+			"error":   err.Error(),
+		})
 	}
 
-	if err := repoPostgre.UpdateAdvisor(id, req.LecturerID); err != nil {
-		return c.Status(500).JSON(fiber.Map{"message": "Gagal set dosen wali"})
-	}
-	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "Dosen Wali berhasil diupdate"})
+	return c.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"student": result.StudentDetail,
+		"reference": result.AchievementReference,
+		"achievement": mongoData,
+	})
+
 }
+
+
+
+func SetStudentAdvisorService(c *fiber.Ctx) error {
+
+	studentID := c.Params("id")
+	if studentID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "student_id tidak valid",
+		})
+	}
+
+	// ambil advisor_id dari body
+	var body map[string]string
+	if err := c.BodyParser(&body); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "body tidak valid",
+			"error":   err.Error(),
+		})
+	}
+
+	advisorID := body["advisor_id"]
+	if advisorID == "" {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "advisor_id wajib diisi",
+		})
+	}
+
+	result, err := repoPostgre.SetStudentAdvisorRepo(studentID, advisorID)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"message": "tidak dapat set advisor ke student",
+			"error":   err.Error(),
+		})
+	}
+
+	return c.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"data":   result,
+	})
+}
+
