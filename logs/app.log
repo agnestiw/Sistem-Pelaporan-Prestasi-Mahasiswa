@@ -673,3 +673,14 @@
 [15:10:50] 500 - POST /api/v1/achievements/b59fc4b4-3177-4ef0-afae-eaa54df65412/history -     216.166µs
 [15:10:54] 403 - GET /api/v1/achievements/b59fc4b4-3177-4ef0-afae-eaa54df65412/history -      98.583µs
 [15:11:14] 200 - GET /api/v1/achievements/b59fc4b4-3177-4ef0-afae-eaa54df65412/history -     7.41925ms
+[17:36:12] 200 - POST /api/v1/auth/login -  308.923166ms
+[17:36:52] 500 - GET /api/v1/analytics/ -     258.708µs
+[17:37:11] 500 - GET /api/v1/reports/ -     182.416µs
+[17:37:17] 500 - GET /api/v1/reports/statistics/ -    3.460792ms
+[17:38:58] 500 - GET /api/v1/reports/statistics/ -      9.4435ms
+[17:41:53] 200 - GET /api/v1/reports/statistics/ -   79.935708ms
+[17:44:37] 200 - GET /api/v1/reports/statistics/ -   57.882417ms
+[17:45:54] 200 - GET /api/v1/reports/statistics/ -  367.196292ms
+[17:48:20] 401 - GET /api/v1/reports/student/4763a326-a8a3-4922-b88b-540ee3884537 -     197.125µs
+[17:48:36] 500 - GET /api/v1/reports/student/4763a326-a8a3-4922-b88b-540ee3884537 -     221.333µs
+[17:49:05] 200 - GET /api/v1/reports/student/4763a326-a8a3-4922-b88b-540ee3884537 -   64.563542ms

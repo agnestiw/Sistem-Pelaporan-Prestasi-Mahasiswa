@@ -28,6 +28,7 @@ func NewApp() *fiber.App {
 	route.AchievementRoutes(app)
 	route.LecturerRoute(app)
 	route.StudentRoutes(app)
+	route.Analytics(app)
 
 	return app
 }
