@@ -16,8 +16,6 @@ func setupAchievementsTestApp() *fiber.App {
 	api := app.Group("/api/v1")
 	achievements := api.Group("/achievements")
 
-	// ===== DUMMY HANDLERS =====
-
 	achievements.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).JSON(fiber.Map{
 			"status": "success",
@@ -84,7 +82,6 @@ func setupAchievementsTestApp() *fiber.App {
 	return app
 }
 
-// ===================== TESTS =====================
 
 func TestGetAllAchievements(t *testing.T) {
 	app := setupAchievementsTestApp()

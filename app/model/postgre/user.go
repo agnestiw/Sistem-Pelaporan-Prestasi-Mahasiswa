@@ -46,15 +46,15 @@ type CreateUserRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
 	FullName string `json:"fullName" validate:"required"`
-	RoleID   string `json:"roleId" validate:"required"` // Admin harus pilih role saat create
+	RoleID   string `json:"roleId" validate:"required"` 
 }
 
 type UpdateUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email" validate:"email"`
 	FullName string `json:"fullName"`
-	Password string `json:"password"` // Opsional, jika kosong berarti tidak ganti password
-	IsActive *bool  `json:"isActive"` // Pointer agar bisa mendeteksi false
+	Password string `json:"password"`
+	IsActive *bool  `json:"isActive"`
 }
 
 type AssignRoleRequest struct {

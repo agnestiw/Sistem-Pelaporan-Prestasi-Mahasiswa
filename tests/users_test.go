@@ -16,8 +16,6 @@ func setupUsersTestApp() *fiber.App {
 	api := app.Group("/api/v1")
 	users := api.Group("/users")
 
-	// ===== DUMMY HANDLER (BUKAN repository/service asli) =====
-
 	users.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).JSON(fiber.Map{
 			"status": "success",
@@ -67,8 +65,6 @@ func setupUsersTestApp() *fiber.App {
 
 	return app
 }
-
-// ===================== TESTS =====================
 
 func TestGetAllUsers(t *testing.T) {
 	app := setupUsersTestApp()

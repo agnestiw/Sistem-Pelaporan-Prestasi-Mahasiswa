@@ -20,9 +20,6 @@ func Protect() fiber.Handler {
 
 		var tokenString string
 
-		// ✅ Support:
-		// 1. "Bearer <token>"
-		// 2. "<token>" (langsung)
 		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
 			tokenString = strings.TrimSpace(authHeader[7:])
 		} else {
@@ -35,14 +32,12 @@ func Protect() fiber.Handler {
 			})
 		}
 
-		// ✅ Cek blacklist
 		if memory.IsBlacklisted(tokenString) {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "Unauthorized: Anda sudah logout, silakan login kembali",
 			})
 		}
 
-		// ✅ Validasi JWT
 		claims, err := helper.ValidateJWT(tokenString)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -50,7 +45,6 @@ func Protect() fiber.Handler {
 			})
 		}
 
-		// ✅ Inject claims
 		c.Locals("user_id", claims["user_id"])
 		c.Locals("role_id", claims["role_id"])
 		c.Locals("role_name", claims["role_name"])

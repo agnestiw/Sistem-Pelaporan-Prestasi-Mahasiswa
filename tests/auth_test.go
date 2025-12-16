@@ -15,7 +15,6 @@ func setupTestApp() *fiber.App {
 	api := app.Group("/api/v1")
 	auth := api.Group("/auth")
 
-	// ===== DUMMY HANDLER (BUKAN service asli) =====
 	auth.Post("/login", func(c *fiber.Ctx) error {
 		return c.Status(200).JSON(fiber.Map{
 			"status": "success",
@@ -55,7 +54,6 @@ func setupTestApp() *fiber.App {
 	return app
 }
 
-// ===================== TESTS =====================
 
 func TestLogin(t *testing.T) {
 	app := setupTestApp()

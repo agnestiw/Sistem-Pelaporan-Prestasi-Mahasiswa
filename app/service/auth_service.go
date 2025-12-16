@@ -44,7 +44,7 @@ func Login(c *fiber.Ctx) error {
 		user.ID,
 		user.RoleID,
 		user.RoleName,
-		user.StudentID, // ✅ TERISI DARI JOIN students
+		user.StudentID, 
 		user.AdvisorID,
 		permissions,
 		time.Hour,

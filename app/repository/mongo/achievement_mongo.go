@@ -1,4 +1,3 @@
-// app/repository/mongo/achievement_mongo.go
 package mongo
 
 import (
@@ -168,22 +167,6 @@ func (r *AchievementRepo) Delete(ctx context.Context, id string) error {
 	_, err := r.Collection.DeleteOne(ctx, bson.M{"_id": oid})
 	return err
 }
-
-// func UpdateAchievementByID(ctx context.Context, mongoID string, input model.Achievement) error {
-// 	collection := database.MongoDb.Collection("achievements")
-
-// 	objectID, err := primitive.ObjectIDFromHex(mongoID)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	update := bson.M{
-// 		"$set": input,
-// 	}
-
-// 	_, err = collection.UpdateByID(ctx, objectID, update)
-// 	return err
-// }
 
 
 func UpdateAchievementFieldsByID(

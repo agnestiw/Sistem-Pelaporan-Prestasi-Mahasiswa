@@ -76,7 +76,6 @@ func Authenticate(username, password string) (*postgre.User, error) {
 		return nil, errors.New("username tidak ditemukan")
 	}
 	if err != nil {
-		// ⬅️ INI YANG MEMBONGKAR MASALAH ASLI
 		return nil, err
 	}
 

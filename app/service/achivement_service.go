@@ -184,7 +184,6 @@ func UpdateAchievementService(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 	roleName := strings.ToLower(c.Locals("role_name").(string))
 
-	// 🔹 Ambil reference
 	ref, err := repoPg.GetAchievementRefByID(refID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
@@ -293,7 +292,6 @@ func DeleteAchievementService(c *fiber.Ctx) error {
 		})
 	}
 
-	// 🔒 Authorization
 	if roleName == "mahasiswa" {
 		student, err := repoPg.GetStudentByIDRepo(userID)
 		if err != nil || student.ID != ref.StudentID {

@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-
-
 func GetStudentIdFromAchievementReferences(achievementReferenceID string) (string, error) {
 	var studentID string
 

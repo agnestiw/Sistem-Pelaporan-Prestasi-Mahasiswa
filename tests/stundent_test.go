@@ -16,8 +16,6 @@ func setupStudentsTestApp() *fiber.App {
 	api := app.Group("/api/v1")
 	students := api.Group("/students")
 
-	// ===== DUMMY HANDLERS =====
-
 	students.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).JSON(fiber.Map{
 			"status": "success",

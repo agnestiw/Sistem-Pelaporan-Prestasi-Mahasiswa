@@ -55,9 +55,3 @@ type UpdateAchievementRequest struct {
 	Details         map[string]interface{} `json:"details,omitempty"`
 	Tags            []string               `json:"tags,omitempty"`
 }
-
-
-// type AchievementResponseV2 struct {
-// 	Achievement	Achievement         `json:"achievement"`
-// 	Details     map[string]interface{} `json:"details,omitempty"`
-// }

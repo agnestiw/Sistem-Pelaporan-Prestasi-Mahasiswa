@@ -4,7 +4,6 @@ import (
 	"sistem-prestasi/database"
 )
 
-// Total prestasi per tipe
 func GetTotalAchievementByStatusRepo() ([]map[string]interface{}, error) {
 	rows, err := database.DB.Query(`
 		SELECT status, COUNT(*) AS total
@@ -32,7 +31,6 @@ func GetTotalAchievementByStatusRepo() ([]map[string]interface{}, error) {
 }
 
 
-// Total prestasi per periode
 func GetTotalAchievementByPeriodRepo() ([]map[string]interface{}, error) {
 	rows, err := database.DB.Query(`
 		SELECT DATE_TRUNC('month', verified_at) AS period, COUNT(*) AS total
@@ -61,7 +59,7 @@ func GetTotalAchievementByPeriodRepo() ([]map[string]interface{}, error) {
 	return result, nil
 }
 
-// Top mahasiswa berprestasi
+
 func GetTopStudentsRepo() ([]map[string]interface{}, error) {
 	rows, err := database.DB.Query(`
 		SELECT s.id, u.full_name, COUNT(*) AS total
@@ -94,7 +92,6 @@ func GetTopStudentsRepo() ([]map[string]interface{}, error) {
 	return result, nil
 }
 
-// Distribusi tingkat kompetisi
 func GetVerifiedCompetitionMongoIDsRepo() ([]string, error) {
 	rows, err := database.DB.Query(`
 		SELECT mongo_achievement_id
@@ -115,7 +112,6 @@ func GetVerifiedCompetitionMongoIDsRepo() ([]string, error) {
 
 	return ids, nil
 }
-
 
 
 
@@ -151,9 +147,6 @@ func GetStudentStatisticsRepo(studentID string) ([]map[string]interface{}, error
 
 
 
-
-
-// Total prestasi per STATUS (per student)
 func GetStudentTotalByStatusRepo(studentID string) ([]map[string]interface{}, error) {
 	rows, err := database.DB.Query(`
 		SELECT status, COUNT(*) AS total
@@ -181,7 +174,6 @@ func GetStudentTotalByStatusRepo(studentID string) ([]map[string]interface{}, er
 	return result, nil
 }
 
-// Total prestasi per periode (per bulan, per student)
 func GetStudentTotalByPeriodRepo(studentID string) ([]map[string]interface{}, error) {
 	rows, err := database.DB.Query(`
 		SELECT DATE_TRUNC('month', verified_at) AS period, COUNT(*) AS total
@@ -211,7 +203,6 @@ func GetStudentTotalByPeriodRepo(studentID string) ([]map[string]interface{}, er
 	return result, nil
 }
 
-// Ambil mongo_achievement_id (verified, per student)
 func GetStudentVerifiedMongoIDsRepo(studentID string) ([]string, error) {
 	rows, err := database.DB.Query(`
 		SELECT mongo_achievement_id
