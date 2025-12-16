@@ -24,11 +24,10 @@ func NewApp() *fiber.App {
 	app.Use(cors.New())
 	app.Use(logger.New(LoggerConfig()))
 
-		// swagger
+	// swagger
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	// routes
-	route.SetupRoutes(app)
 	route.UsersRoute(app)
 	route.AuthRoute(app)
 	route.AchievementRoutes(app)
