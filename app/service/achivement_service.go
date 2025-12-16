@@ -18,6 +18,13 @@ import (
 	repoPg "sistem-prestasi/app/repository/postgre"
 )
 
+// @Summary Get all achievements
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements [get]
 func GetAllAchievementsService(c *fiber.Ctx) error {
 
 	nama_role := c.Locals("role_name")
@@ -59,6 +66,15 @@ func GetAllAchievementsService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Create achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body modelMongo.CreateAchievementRequest true "Create achievement"
+// @Success 201 {object} map[string]interface{}
+// @Router /api/v1/achievements [post]
 func CreateAchievementService(c *fiber.Ctx) error {
 	var req modelMongo.CreateAchievementRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -140,6 +156,16 @@ func CreateAchievementService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Update achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_id path string true "Achievement ID"
+// @Param body body modelMongo.UpdateAchievementRequest true "Update achievement"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_id} [put]
 func UpdateAchievementService(c *fiber.Ctx) error {
 	refID := c.Params("achievement_id")
 	if refID == "" {
@@ -208,7 +234,7 @@ func UpdateAchievementService(c *fiber.Ctx) error {
 
 	update["updatedAt"] = time.Now()
 
-	if len(update) == 1 { // hanya updatedAt
+	if len(update) == 1 { 
 		return c.Status(400).JSON(fiber.Map{
 			"error": "No fields to update",
 		})
@@ -217,7 +243,6 @@ func UpdateAchievementService(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// 🔹 Update Mongo
 	if err := repoMongo.UpdateAchievementFieldsByID(
 		ctx,
 		ref.MongoAchievementID,
@@ -235,6 +260,15 @@ func UpdateAchievementService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Delete achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_id path string true "Achievement ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_id} [delete]
 func DeleteAchievementService(c *fiber.Ctx) error {
 	refID := c.Params("achievement_id")
 	if refID == "" {
@@ -289,6 +323,15 @@ func DeleteAchievementService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Get achievement detail
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_id path string true "Achievement ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_id} [get]
 func GetAchievementDetailService(c *fiber.Ctx) error {
 	achievementID := c.Params("achievement_id")
 	if achievementID == "" {
@@ -297,7 +340,6 @@ func GetAchievementDetailService(c *fiber.Ctx) error {
 		})
 	}
 
-	// 🔹 PostgreSQL reference
 	result, err := repoPg.GetAchievementDetailByAchievementIDRepo(achievementID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -306,7 +348,6 @@ func GetAchievementDetailService(c *fiber.Ctx) error {
 		})
 	}
 
-	// 🔹 Mongo achievement
 	mongoData, err := repoMongo.FindAchievementByID(
 		context.Background(),
 		result.MongoAchievementID,
@@ -318,7 +359,6 @@ func GetAchievementDetailService(c *fiber.Ctx) error {
 		})
 	}
 
-	// 🔹 Mongo attachments (INI YANG KURANG)
 	attachments, err := repoMongo.GetAttachmentsByReferenceID(
 		context.Background(),
 		result.ID,
@@ -330,7 +370,6 @@ func GetAchievementDetailService(c *fiber.Ctx) error {
 		})
 	}
 
-	// 🔹 Inject attachments
 	mongoData.Attachments = attachments
 
 	return c.Status(200).JSON(fiber.Map{
@@ -340,6 +379,15 @@ func GetAchievementDetailService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Submit achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_references_id path string true "Achievement Reference ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_references_id}/submit [post]
 func SubmitAchievementService(c *fiber.Ctx) error {
 
 	achievement_references_id := c.Params("achievement_references_id")
@@ -348,21 +396,18 @@ func SubmitAchievementService(c *fiber.Ctx) error {
 	roleName := c.Locals("role_name")
 	fmt.Println(roleName)
 
-	// kalo id mahasiswa gak ada
 	if student_id == "" {
 		return c.Status(404).JSON(fiber.Map{
 			"message": "id mahasiswa tidak ada",
 		})
 	}
 
-	// cek kalau dosen atau tidak
 	if roleName != "Admin" && roleName != "Mahasiswa" {
 		return c.Status(403).JSON(fiber.Map{
 			"error": "Role gak boleh",
 		})
 	}
 
-	// cek apakah student_id yang login sesuai dengan student_id di table achievement_references
 	studentIDfromAchievementReferences, err := repoPg.GetStudentIdFromAchievementReferences(achievement_references_id)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
@@ -391,6 +436,15 @@ func SubmitAchievementService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Verify achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_references_id path string true "Achievement Reference ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_references_id}/verify [post]
 func VerifyAchievementService(c *fiber.Ctx) error {
 
 	achievement_references_id := c.Params("achievement_references_id")
@@ -441,6 +495,16 @@ func VerifyAchievementService(c *fiber.Ctx) error {
 
 }
 
+
+// @Summary Reject achievement
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_references_id path string true "Achievement Reference ID"
+// @Param body body modelPg.RejectAchievementRequest true "Reject reason"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_references_id}/reject [post]
 func RejectAchievementService(c *fiber.Ctx) error {
 
 	achievement_references_id := c.Params("achievement_references_id")
@@ -499,6 +563,16 @@ func RejectAchievementService(c *fiber.Ctx) error {
 
 }
 
+
+// @Summary Upload achievement attachment
+// @Tags Achievements
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_references_id path string true "Achievement Reference ID"
+// @Param attachment formData file true "Attachment file"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_references_id}/attachment [post]
 func UploadAttachmentAchievementService(c *fiber.Ctx) error {
 	achievementReferencesID := c.Params("achievement_references_id")
 	if achievementReferencesID == "" {
@@ -520,14 +594,12 @@ func UploadAttachmentAchievementService(c *fiber.Ctx) error {
 	}
 	defer file.Close()
 
-	// Folder: /uploads/achievements/<achievement_references_id>/
 	folder := fmt.Sprintf("./uploads/achievements/%s/", achievementReferencesID)
 
 	if _, err := os.Stat(folder); os.IsNotExist(err) {
 		os.MkdirAll(folder, 0755)
 	}
 
-	// file name unique
 	fileName := fmt.Sprintf("%d-%s", time.Now().UnixNano(), fileHeader.Filename)
 	filePath := folder + fileName
 
@@ -541,7 +613,6 @@ func UploadAttachmentAchievementService(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"message": "Gagal menyimpan file"})
 	}
 
-	// Save metadata
 	folderName, err := repoMongo.UploadAttachmentAchievemenRepo(achievementReferencesID, fileName)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -557,6 +628,15 @@ func UploadAttachmentAchievementService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Get achievement history
+// @Tags Achievements
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param achievement_references_id path string true "Achievement Reference ID"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/v1/achievements/{achievement_references_id}/history [get]
 func GetAchievementHistoryService(c *fiber.Ctx) error {
 	achievement_references_id := c.Params("achievement_references_id")
 
@@ -582,17 +662,14 @@ func GetAchievementHistoryService(c *fiber.Ctx) error {
 		})
 	}
 
-	// 3. generate history
 	history := []modelPg.HistoryItem{}
 
-	// DRAFT
 	history = append(history, modelPg.HistoryItem{
 		Status:    "draft",
 		Timestamp: ref.CreatedAt,
 		Note:      "",
 	})
 
-	// SUBMITTED
 	if ref.SubmittedAt != nil {
 		history = append(history, modelPg.HistoryItem{
 			Status:    "submitted",
@@ -601,7 +678,6 @@ func GetAchievementHistoryService(c *fiber.Ctx) error {
 		})
 	}
 
-	// VERIFIED
 	if ref.VerifiedAt != nil {
 		history = append(history, modelPg.HistoryItem{
 			Status:    "verified",
@@ -610,7 +686,6 @@ func GetAchievementHistoryService(c *fiber.Ctx) error {
 		})
 	}
 
-	// REJECTED
 	if ref.Status == "rejected" {
 		history = append(history, modelPg.HistoryItem{
 			Status:    "rejected",

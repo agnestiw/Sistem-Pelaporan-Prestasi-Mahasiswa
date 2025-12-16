@@ -7,12 +7,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// GetMyAdvisor: Digunakan oleh Mahasiswa untuk melihat siapa dosen walinya
+
 func GetMyAdvisor(c *fiber.Ctx) error {
-	// 1. Ambil User ID dari Token
 	loggedInUserID := c.Locals("user_id").(string)
 
-	// 2. Cari data Mahasiswa berdasarkan User ID
 	student, err := repoPostgre.GetStudentByIDRepo(loggedInUserID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
@@ -20,7 +18,6 @@ func GetMyAdvisor(c *fiber.Ctx) error {
 		})
 	}
 
-	// 3. Cek apakah sudah punya dosen wali
 	if student.AdvisorName == nil {
 		return c.Status(200).JSON(fiber.Map{
 			"status":  "success",
@@ -29,18 +26,15 @@ func GetMyAdvisor(c *fiber.Ctx) error {
 		})
 	}
 
-	// Jika ingin mengembalikan detail dosen lengkap, anda bisa query lagi ke tabel lecturers
-	// Tapi jika cukup nama saja (dari query student detail), kembalikan ini:
 	return c.Status(200).JSON(fiber.Map{
 		"status": "success",
 		"data": fiber.Map{
 			"advisorName": *student.AdvisorName,
-			// Anda bisa menambahkan info lain jika query FindStudentByUserID dimodifikasi
 		},
 	})
 }
 
-// GetAllLecturers mengambil semua data dosen
+
 func GetAllLecturers(c *fiber.Ctx) error {
 	lecturers, err := repoPostgre.FindAllLecturers()
 	if err != nil {
@@ -49,11 +43,9 @@ func GetAllLecturers(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "data": lecturers})
 }
 
-// GetLecturerAdvisees mengambil data mahasiswa bimbingan dosen tertentu
 func GetLecturerAdvisees(c *fiber.Ctx) error {
 	lecturerID := c.Params("id")
 
-	// Menggunakan fungsi repo functional: FindLecturerByID(db, id)
 	lecturer, err := repoPostgre.FindLecturerByID(lecturerID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"message": "Dosen tidak ditemukan"})
@@ -64,12 +56,10 @@ func GetLecturerAdvisees(c *fiber.Ctx) error {
 		return c.Status(401).JSON(fiber.Map{"message": "Unauthorized"})
 	}
 
-	// Cek otorisasi: harus admin atau dosen yang bersangkutan
 	if !helper.IsAdmin(c) && lecturer.UserID != loggedInUserID {
 		return c.Status(403).JSON(fiber.Map{"message": "Forbidden: Anda tidak boleh melihat bimbingan dosen lain"})
 	}
 
-	// Menggunakan fungsi repo functional: FindLecturerAdvisees(db, lecturerID)
 	students, err := repoPostgre.FindLecturerAdvisees(lecturerID)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"message": "Gagal mengambil data mahasiswa bimbingan"})

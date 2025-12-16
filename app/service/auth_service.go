@@ -13,6 +13,16 @@ import (
 )
 
 
+// @Summary Login user
+// @Description Login menggunakan username dan password
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body modelPostgre.LoginRequest true "Login request"
+// @Success 200 {object} modelPostgre.LoginResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/v1/auth/login [post]
 func Login(c *fiber.Ctx) error {
 	var req modelPostgre.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -68,6 +78,17 @@ func Login(c *fiber.Ctx) error {
 }
 
 
+
+// @Summary Refresh access token
+// @Description Generate access token baru menggunakan refresh token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body modelPostgre.RefreshRequest true "Refresh token request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /api/v1/auth/refresh [post]
 func Refresh(c *fiber.Ctx) error {
 	var req modelPostgre.RefreshRequest
 	
@@ -107,6 +128,16 @@ func Refresh(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Logout user
+// @Description Logout user dan blacklist access token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Router /api/v1/auth/logout [post]
 func Logout(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if len(authHeader) < 8 {
@@ -122,6 +153,17 @@ func Logout(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Get user profile
+// @Description Mengambil data profile user yang sedang login
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/auth/profile [get]
 func Profile(c *fiber.Ctx) error {
 	userID, ok := c.Locals("user_id").(string)
 	if !ok {

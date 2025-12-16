@@ -11,35 +11,46 @@ import (
 
 func Protect() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
+		authHeader := strings.TrimSpace(c.Get("Authorization"))
 		if authHeader == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "Unauthorized: Token wajib ada",
 			})
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		var tokenString string
+
+		// ✅ Support:
+		// 1. "Bearer <token>"
+		// 2. "<token>" (langsung)
+		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
+			tokenString = strings.TrimSpace(authHeader[7:])
+		} else {
+			tokenString = authHeader
+		}
+
+		if tokenString == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Unauthorized: Format token salah",
+				"message": "Unauthorized: Token tidak valid",
 			})
 		}
 
-		tokenString := parts[1]
-
+		// ✅ Cek blacklist
 		if memory.IsBlacklisted(tokenString) {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "Unauthorized: Anda sudah logout, silakan login kembali",
 			})
 		}
 
+		// ✅ Validasi JWT
 		claims, err := helper.ValidateJWT(tokenString)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"message": "Unauthorized: Token tidak valid",
+				"message": "Unauthorized: Token tidak valid atau expired",
 			})
 		}
 
+		// ✅ Inject claims
 		c.Locals("user_id", claims["user_id"])
 		c.Locals("role_id", claims["role_id"])
 		c.Locals("role_name", claims["role_name"])

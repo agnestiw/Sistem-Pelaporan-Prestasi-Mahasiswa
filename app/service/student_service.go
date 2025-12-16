@@ -8,6 +8,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+
+// @Summary Get all students
+// @Description Mengambil semua data mahasiswa (hanya admin & dosen)
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/students [get]
 func GetAllStudentService(c *fiber.Ctx) error {
 
 	nama_role := c.Locals("role_name")
@@ -32,6 +43,18 @@ func GetAllStudentService(c *fiber.Ctx) error {
 	})
 }
 
+
+// @Summary Get student by ID
+// @Description Mengambil data mahasiswa berdasarkan ID
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/students/{id} [get]
 func GetStudentByID(c *fiber.Ctx) error {
 
 	id := c.Params("id")
@@ -56,6 +79,18 @@ func GetStudentByID(c *fiber.Ctx) error {
 
 }
 
+
+// @Summary Get student achievement detail
+// @Description Mengambil detail prestasi mahasiswa beserta data achievement dari MongoDB
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/students/{id}/achievements [get]
 func GetStudentAchievementDetailService(c *fiber.Ctx) error {
 
 	id := c.Params("id")
@@ -91,7 +126,18 @@ func GetStudentAchievementDetailService(c *fiber.Ctx) error {
 }
 
 
-
+// @Summary Set student advisor
+// @Description Menentukan dosen pembimbing (advisor) untuk mahasiswa
+// @Tags Students
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Param body body map[string]string true "Advisor ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/students/{id}/advisor [put]
 func SetStudentAdvisorService(c *fiber.Ctx) error {
 
 	studentID := c.Params("id")
