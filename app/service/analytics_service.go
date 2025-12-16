@@ -7,8 +7,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// @Summary Get achievement statistics
+// @Description Get global achievement statistics (admin / authorized)
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/reports/statistics [get]
 func GetStatisticsService(c *fiber.Ctx) error {
-
 	totalByStatus, err := repoPg.GetTotalAchievementByStatusRepo()
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -60,9 +68,18 @@ func GetStatisticsService(c *fiber.Ctx) error {
 	})
 }
 
-
+// @Summary Get student achievement report
+// @Description Get achievement statistics for a specific student
+// @Tags Analytics
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Student ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/reports/student/{id} [get]
 func GetStudentReportService(c *fiber.Ctx) error {
-
 	studentID := c.Params("id")
 	if studentID == "" {
 		return c.Status(400).JSON(fiber.Map{

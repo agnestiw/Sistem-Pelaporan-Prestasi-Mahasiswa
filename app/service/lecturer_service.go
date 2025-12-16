@@ -7,7 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-
 func GetMyAdvisor(c *fiber.Ctx) error {
 	loggedInUserID := c.Locals("user_id").(string)
 
@@ -43,6 +42,17 @@ func GetAllLecturers(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "data": lecturers})
 }
 
+// @Summary Get lecturer advisees
+// @Description Get students supervised by a lecturer
+// @Tags Lecturer
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Lecturer ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 403 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/v1/lecturers/{id}/advisees [get]
 func GetLecturerAdvisees(c *fiber.Ctx) error {
 	lecturerID := c.Params("id")
 
@@ -67,6 +77,15 @@ func GetLecturerAdvisees(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "data": students})
 }
 
+// @Summary Get all lecturers
+// @Description Get list of all lecturers
+// @Tags Lecturer
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /api/v1/lecturers [get]
 func GetLecturerService(c *fiber.Ctx) error {
 
 	role := c.Locals("role_name")
