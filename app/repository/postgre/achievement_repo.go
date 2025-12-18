@@ -38,7 +38,6 @@ func GetAdvisorIDByAchievementRef(refID string) (string, error) {
 
 func GetAllAchievementsRepo(limit, offset int) ([]modelPostgres.AchievementReference, int, error) {
     var total int
-    // Hitung total data untuk pagination metadata
     countQuery := `SELECT COUNT(*) FROM achievement_references WHERE status != 'deleted'`
     err := database.DB.QueryRow(countQuery).Scan(&total)
     if err != nil {
@@ -253,30 +252,29 @@ func SubmitAchievementRepo(achievement_references_id string) (bool, error) {
 
 }
 
-func VerifyAchievementRepo(achievement_references_id string) (bool, error) {
+func VerifyAchievementRepo(achievement_references_id string, verifiedBy string) (bool, error) {
+    query, err := database.DB.Exec(`
+        UPDATE achievement_references
+        SET status = 'verified',
+            verified_at = NOW(),
+            verified_by = $2
+        WHERE id = $1
+    `, achievement_references_id, verifiedBy) 
 
-	query, err := database.DB.Exec(`
-		UPDATE achievement_references
-		SET status = 'verified',
-			verified_at = NOW()
-		WHERE id = $1
-	`, achievement_references_id)
+    if err != nil {
+        return false, err
+    }
 
-	if err != nil {
-		return false, err
-	}
+    rowsEffected, err := query.RowsAffected()
+    if err != nil {
+        return false, err
+    }
 
-	rowsEffected, err := query.RowsAffected()
-	if err != nil {
-		return false, err
-	}
+    if rowsEffected == 0 {
+        return false, nil
+    }
 
-	if rowsEffected == 0 {
-		return false, nil
-	}
-
-	return true, err
-
+    return true, nil
 }
 
 func RejectAchievementRepo(achievement_references_id string, rejection_note string, verified_by string) (bool, error) {

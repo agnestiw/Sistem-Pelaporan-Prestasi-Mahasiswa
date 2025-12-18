@@ -22,7 +22,7 @@ func AchievementRoutes(app *fiber.App) {
 	achievments.Post("/:achievement_references_id/submit", middleware.HasPermission("achievement:submit"), service.SubmitAchievementService)
 	achievments.Post("/:achievement_references_id/verify", middleware.HasPermission("achievement:verify"), service.VerifyAchievementService)
 	achievments.Post("/:achievement_references_id/reject", middleware.HasPermission("achievement:reject"), service.RejectAchievementService)
-	achievments.Post("/:achievement_references_id/attachment", middleware.HasPermission("achievement:upload"), service.UploadAttachmentAchievementService)
+	achievments.Post("/:achievement_references_id/attachment", middleware.HasPermission("achievement:create"), service.UploadAttachmentAchievementService)
 	achievments.Get("/:achievement_references_id/history", middleware.HasPermission("achievement:read"), service.GetAchievementHistoryService)
 
 }

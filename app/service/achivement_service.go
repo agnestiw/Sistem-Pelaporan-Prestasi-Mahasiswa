@@ -30,12 +30,10 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/achievements [get]
 func GetAllAchievementsService(c *fiber.Ctx) error {
-    // 1. Ambil Query Params
     page, _ := strconv.Atoi(c.Query("page", "1"))
     limit, _ := strconv.Atoi(c.Query("limit", "10"))
     if page <= 0 { page = 1 }
     if limit <= 0 { limit = 10 }
-
     offset := (page - 1) * limit
 
     nama_role := c.Locals("role_name")
@@ -61,7 +59,6 @@ func GetAllAchievementsService(c *fiber.Ctx) error {
         })
     }
 
-    // 2. Hitung Metadata Pagination
     totalPages := int(math.Ceil(float64(totalData) / float64(limit)))
 
     return c.JSON(fiber.Map{
@@ -457,10 +454,12 @@ func VerifyAchievementService(c *fiber.Ctx) error {
 
 	achievement_references_id := c.Params("achievement_references_id")
 	roleName := c.Locals("role_name")
+	
+	user_id := c.Locals("user_id").(string)
 
 	if roleName == "Mahasiswa" {
 		return c.Status(403).JSON(fiber.Map{
-			"message": "Hanya Admin yang bisa verifikasi achievement",
+			"message": "Hanya Admin dan Dosen wali yang bisa verifikasi achievement",
 		})
 	}
 
@@ -488,7 +487,7 @@ func VerifyAchievementService(c *fiber.Ctx) error {
 		}
 	}
 
-	result, err := repoPg.VerifyAchievementRepo(achievement_references_id)
+	result, err := repoPg.VerifyAchievementRepo(achievement_references_id, user_id)
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{
 			"message": "tidak dapat verify achievement_references",
