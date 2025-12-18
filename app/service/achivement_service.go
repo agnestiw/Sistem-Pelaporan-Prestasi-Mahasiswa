@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,52 +20,60 @@ import (
 	repoPg "sistem-prestasi/app/repository/postgre"
 )
 
-// @Summary Get all achievements
+// @Summary Get all achievements with pagination
 // @Tags Achievements
 // @Accept json
 // @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
 // @Security BearerAuth
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/achievements [get]
 func GetAllAchievementsService(c *fiber.Ctx) error {
+    // 1. Ambil Query Params
+    page, _ := strconv.Atoi(c.Query("page", "1"))
+    limit, _ := strconv.Atoi(c.Query("limit", "10"))
+    if page <= 0 { page = 1 }
+    if limit <= 0 { limit = 10 }
 
-	nama_role := c.Locals("role_name")
-	if nama_role == "Mahasiswa" {
-		
-		id_mahasiswa, ok := c.Locals("student_id").(string)
-		if !ok || id_mahasiswa == "" {
-			return c.Status(400).JSON(fiber.Map{
-				"message": "student_id tidak ditemukan",
-			})
-		}
+    offset := (page - 1) * limit
 
-		result, err := repoPg.GetAllAchievementByStudentID(id_mahasiswa)
+    nama_role := c.Locals("role_name")
+    var result []modelPg.AchievementReference
+    var totalData int
+    var err error
 
-		if err != nil {
-			return c.Status(404).JSON(fiber.Map{
-				"message": "Not Found",
-				"error":   err.Error(),
-			})
-		}
+    if nama_role == "Mahasiswa" {
+        id_mahasiswa, ok := c.Locals("student_id").(string)
+        if !ok || id_mahasiswa == "" {
+            return c.Status(400).JSON(fiber.Map{"message": "student_id tidak ditemukan"})
+        }
 
-		return c.JSON(fiber.Map{
-			"status": "success",
-			"data":   result,
-		})
-	}
+        result, totalData, err = repoPg.GetAllAchievementByStudentID(id_mahasiswa, limit, offset)
+    } else {
+        result, totalData, err = repoPg.GetAllAchievementsRepo(limit, offset)
+    }
 
-	result, err := repoPg.GetAllAchievementsRepo()
-	if err != nil {
-		return c.Status(404).JSON(fiber.Map{
-			"message": "Not Found",
-			"error":   err.Error(),
-		})
-	}
+    if err != nil {
+        return c.Status(404).JSON(fiber.Map{
+            "message": "Data tidak ditemukan atau error database",
+            "error":   err.Error(),
+        })
+    }
 
-	return c.JSON(fiber.Map{
-		"status": "success",
-		"data":   result,
-	})
+    // 2. Hitung Metadata Pagination
+    totalPages := int(math.Ceil(float64(totalData) / float64(limit)))
+
+    return c.JSON(fiber.Map{
+        "status": "success",
+        "data":   result,
+        "pagination": fiber.Map{
+            "total_items":  totalData,
+            "total_pages":  totalPages,
+            "current_page": page,
+            "limit":        limit,
+        },
+    })
 }
 
 

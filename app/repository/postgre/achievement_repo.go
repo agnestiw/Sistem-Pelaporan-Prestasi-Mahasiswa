@@ -36,52 +36,42 @@ func GetAdvisorIDByAchievementRef(refID string) (string, error) {
 	return advisorID, err
 }
 
-func GetAllAchievementsRepo() ([]modelPostgres.AchievementReference, error) {
-	query := `
-        SELECT 
-            ar.id, 
-            ar.student_id, 
-            ar.mongo_achievement_id, 
-            ar.status, 
-            ar.submitted_at, 
-            ar.verified_at, 
-            ar.verified_by, 
-            ar.rejection_note, 
-            ar.created_at
-        FROM achievement_references ar
-        ORDER BY ar.created_at DESC
+func GetAllAchievementsRepo(limit, offset int) ([]modelPostgres.AchievementReference, int, error) {
+    var total int
+    // Hitung total data untuk pagination metadata
+    countQuery := `SELECT COUNT(*) FROM achievement_references WHERE status != 'deleted'`
+    err := database.DB.QueryRow(countQuery).Scan(&total)
+    if err != nil {
+        return nil, 0, err
+    }
+
+    query := `
+        SELECT id, student_id, mongo_achievement_id, status, submitted_at, 
+               verified_at, verified_by, rejection_note, created_at
+        FROM achievement_references
+        WHERE status != 'deleted'
+        ORDER BY created_at DESC
+        LIMIT $1 OFFSET $2
     `
+    rows, err := database.DB.Query(query, limit, offset)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
 
-	rows, err := database.DB.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+    var results []modelPostgres.AchievementReference
+    for rows.Next() {
+        var data modelPostgres.AchievementReference
+        err := rows.Scan(&data.ID, &data.StudentID, &data.MongoAchievementID, &data.Status, 
+                         &data.SubmittedAt, &data.VerifiedAt, &data.VerifiedBy, 
+                         &data.RejectionNote, &data.CreatedAt)
+        if err != nil {
+            return nil, 0, err
+        }
+        results = append(results, data)
+    }
 
-	var results []modelPostgres.AchievementReference
-
-	for rows.Next() {
-		var data modelPostgres.AchievementReference
-
-		err := rows.Scan(
-			&data.ID,
-			&data.StudentID,
-			&data.MongoAchievementID,
-			&data.Status,
-			&data.SubmittedAt,
-			&data.VerifiedAt,
-			&data.VerifiedBy,
-			&data.RejectionNote,
-			&data.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, data)
-	}
-
-	return results, nil
+    return results, total, nil
 }
 
 func CreateAchievementRef(ref modelPostgres.AchievementReference) error {
@@ -136,53 +126,41 @@ func GetAchievementDetailByAchievementIDRepo(achievementID string,) (*modelPostg
 }
 
 
-func GetAllAchievementByStudentID(studentID string) ([]modelPostgres.AchievementReference, error) {
-	query := `
-        SELECT 
-            ar.id, 
-            ar.student_id, 
-            ar.mongo_achievement_id, 
-            ar.status, 
-            ar.submitted_at, 
-            ar.verified_at, 
-            ar.verified_by, 
-            ar.rejection_note, 
-            ar.created_at
-        FROM achievement_references ar
-        WHERE ar.student_id = $1
-        ORDER BY ar.created_at DESC
+func GetAllAchievementByStudentID(studentID string, limit, offset int) ([]modelPostgres.AchievementReference, int, error) {
+    var total int
+    countQuery := `SELECT COUNT(*) FROM achievement_references WHERE student_id = $1 AND status != 'deleted'`
+    err := database.DB.QueryRow(countQuery, studentID).Scan(&total)
+    if err != nil {
+        return nil, 0, err
+    }
+
+    query := `
+        SELECT id, student_id, mongo_achievement_id, status, submitted_at, 
+               verified_at, verified_by, rejection_note, created_at
+        FROM achievement_references
+        WHERE student_id = $1 AND status != 'deleted'
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
     `
+    rows, err := database.DB.Query(query, studentID, limit, offset)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
 
-	rows, err := database.DB.Query(query, studentID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+    var results []modelPostgres.AchievementReference
+    for rows.Next() {
+        var data modelPostgres.AchievementReference
+        err := rows.Scan(&data.ID, &data.StudentID, &data.MongoAchievementID, &data.Status, 
+                         &data.SubmittedAt, &data.VerifiedAt, &data.VerifiedBy, 
+                         &data.RejectionNote, &data.CreatedAt)
+        if err != nil {
+            return nil, 0, err
+        }
+        results = append(results, data)
+    }
 
-	var results []modelPostgres.AchievementReference
-
-	for rows.Next() {
-		var data modelPostgres.AchievementReference
-
-		err := rows.Scan(
-			&data.ID,
-			&data.StudentID,
-			&data.MongoAchievementID,
-			&data.Status,
-			&data.SubmittedAt,
-			&data.VerifiedAt,
-			&data.VerifiedBy,
-			&data.RejectionNote,
-			&data.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		results = append(results, data)
-	}
-
-	return results, nil
+    return results, total, nil
 }
 
 func UpdateAchievementRefUpdatedAt(id string) error {

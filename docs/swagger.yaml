@@ -55,7 +55,6 @@ definitions:
         minLength: 6
         type: string
       roleId:
-        description: Admin harus pilih role saat create
         type: string
       username:
         minLength: 4
@@ -107,10 +106,8 @@ definitions:
       fullName:
         type: string
       isActive:
-        description: Pointer agar bisa mendeteksi false
         type: boolean
       password:
-        description: Opsional, jika kosong berarti tidak ganti password
         type: string
       username:
         type: string
@@ -149,6 +146,17 @@ paths:
     get:
       consumes:
       - application/json
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -159,7 +167,7 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Get all achievements
+      summary: Get all achievements with pagination
       tags:
       - Achievements
     post:
@@ -508,6 +516,126 @@ paths:
       summary: Refresh access token
       tags:
       - Auth
+  /api/v1/lecturers:
+    get:
+      consumes:
+      - application/json
+      description: Get list of all lecturers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all lecturers
+      tags:
+      - Lecturer
+  /api/v1/lecturers/{id}/advisees:
+    get:
+      consumes:
+      - application/json
+      description: Get students supervised by a lecturer
+      parameters:
+      - description: Lecturer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get lecturer advisees
+      tags:
+      - Lecturer
+  /api/v1/reports/statistics:
+    get:
+      consumes:
+      - application/json
+      description: Get global achievement statistics (admin / authorized)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get achievement statistics
+      tags:
+      - Analytics
+  /api/v1/reports/student/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get achievement statistics for a specific student
+      parameters:
+      - description: Student ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get student achievement report
+      tags:
+      - Analytics
   /api/v1/students:
     get:
       consumes:
